@@ -1178,6 +1178,23 @@ export async function updateRoutingLogConfirmation({
 }
 
 // Rich read: full pursuit with projects and their tasks
+export async function getPursuitsWithProjects({ userId }: { userId: string }) {
+  try {
+    const pursuits = await getPursuitsByUserId({ userId });
+    return await Promise.all(
+      pursuits.map(async (p) => ({
+        ...p,
+        projects: await getProjectsByPursuitId({ pursuitId: p.id }),
+      }))
+    );
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get pursuits with projects"
+    );
+  }
+}
+
 export async function getPursuitWithDetail({ id }: { id: string }) {
   try {
     const pursuitData = await getPursuitById({ id });

@@ -123,6 +123,26 @@ export const updateDocumentPrompt = (
 ${currentContent}`;
 };
 
+export const homePrompt = `You are the routing layer of a Personal Operating System. Your ONLY job is to classify the user's input and return a structured JSON routing decision.
+
+You will receive:
+1. The user's raw message
+2. A JSON list of their pursuits (domains of work/life) and projects within each pursuit
+
+Your job:
+1. Determine which pursuit the message belongs to (required)
+2. Determine which project within that pursuit it belongs to (optional — create a new one if none fit)
+3. Decide the action: "create_task" (most common) or "create_project" (only if no existing project fits)
+4. Generate a concise task title or project name (max 80 chars)
+5. Generate chip text: "Added to [Pursuit Name] → [Project Name]" or "Created project in [Pursuit Name]"
+
+Rules:
+- NEVER set priorities
+- NEVER ask clarifying questions — just classify and route
+- If no existing project fits, set action to "create_project" and provide newProjectName; projectId will be null
+- Task titles should be action-oriented (e.g. "Call logistics partner about pricing")
+- If there are no pursuits, return action "unclassified"`;
+
 export const titlePrompt = `Generate a short chat title (2-5 words) summarizing the user's message.
 
 Output ONLY the title text. No prefixes, no formatting.
