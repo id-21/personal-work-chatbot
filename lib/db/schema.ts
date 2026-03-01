@@ -2,6 +2,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
+  integer,
   json,
   pgTable,
   primaryKey,
@@ -168,3 +169,120 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+// ─── Personal OS Tables ───────────────────────────────────────────────────────
+
+export const userModel = pgTable("user_model", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .unique()
+    .references(() => user.id),
+  name: text("name"),
+  values: json("values").$type<string[]>().notNull().default([]),
+  resourceBudget: json("resourceBudget")
+    .$type<Record<string, string>>()
+    .notNull()
+    .default({}),
+  rawContext: text("rawContext"),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type UserModel = InferSelectModel<typeof userModel>;
+
+export const pursuit = pgTable("pursuits", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  name: text("name").notNull(),
+  vision: text("vision"),
+  currentState: text("currentState"),
+  constraints: json("constraints").$type<string[]>().notNull().default([]),
+  opportunities: json("opportunities").$type<string[]>().notNull().default([]),
+  displayOrder: integer("displayOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type Pursuit = InferSelectModel<typeof pursuit>;
+
+export const project = pgTable("projects", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  pursuitId: uuid("pursuitId")
+    .notNull()
+    .references(() => pursuit.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: varchar("status", {
+    enum: ["active", "paused", "completed", "idea"],
+  })
+    .notNull()
+    .default("active"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type Project = InferSelectModel<typeof project>;
+
+export const task = pgTable("tasks", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  projectId: uuid("projectId")
+    .notNull()
+    .references(() => project.id),
+  title: text("title").notNull(),
+  detail: text("detail"),
+  status: varchar("status", {
+    enum: ["open", "in_progress", "done", "dismissed"],
+  })
+    .notNull()
+    .default("open"),
+  source: varchar("source", { enum: ["user", "ai_suggested"] })
+    .notNull()
+    .default("user"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type Task = InferSelectModel<typeof task>;
+
+export const pursuitThought = pgTable("pursuit_thoughts", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  pursuitId: uuid("pursuitId")
+    .notNull()
+    .references(() => pursuit.id),
+  author: varchar("author", { enum: ["user", "ai"] }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type PursuitThought = InferSelectModel<typeof pursuitThought>;
+
+export const contextSummary = pgTable("context_summaries", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  scopeId: uuid("scopeId").notNull(),
+  scope: varchar("scope", { enum: ["pursuit", "project"] }).notNull(),
+  summary: text("summary").notNull(),
+  coversUntil: timestamp("coversUntil").notNull(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type ContextSummary = InferSelectModel<typeof contextSummary>;
+
+export const routingLog = pgTable("routing_log", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  rawInput: text("rawInput").notNull(),
+  classifiedPursuitId: uuid("classifiedPursuitId"),
+  classifiedProjectId: uuid("classifiedProjectId"),
+  action: varchar("action", {
+    enum: ["created_task", "updated_task", "created_project", "no_action"],
+  }),
+  entityId: uuid("entityId"),
+  userConfirmed: boolean("userConfirmed"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type RoutingLog = InferSelectModel<typeof routingLog>;
