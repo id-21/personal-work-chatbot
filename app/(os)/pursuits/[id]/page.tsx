@@ -28,7 +28,7 @@ export default async function PursuitDetailPage({ params }: PursuitDetailPagePro
           <SidebarTrigger className="-ml-1" />
           <div>
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Link className="hover:text-foreground" href="/os">
+              <Link className="hover:text-foreground" href="/">
                 Dashboard
               </Link>
               <span>/</span>

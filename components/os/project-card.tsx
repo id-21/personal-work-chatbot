@@ -36,7 +36,7 @@ export function ProjectCard({ project, tasks, pursuitId }: ProjectCardProps) {
   const openCount = tasks.filter((t) => t.status === "open" || t.status === "in_progress").length;
 
   return (
-    <Link href={`/os/pursuits/${pursuitId}/projects/${project.id}`}>
+    <Link href={`/pursuits/${pursuitId}/projects/${project.id}`}>
       <Card className="h-full cursor-pointer transition-shadow hover:shadow-md">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">

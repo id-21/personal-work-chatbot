@@ -16,7 +16,7 @@ interface PursuitCardProps {
 
 export function PursuitCard({ pursuit }: PursuitCardProps) {
   return (
-    <Link href={`/os/pursuits/${pursuit.id}`}>
+    <Link href={`/pursuits/${pursuit.id}`}>
       <Card className="h-full cursor-pointer transition-shadow hover:shadow-md">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">{pursuit.name}</CardTitle>

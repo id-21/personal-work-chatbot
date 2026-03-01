@@ -48,13 +48,13 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           <SidebarTrigger className="-ml-1" />
           <div>
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Link className="hover:text-foreground" href="/os">
+              <Link className="hover:text-foreground" href="/">
                 Dashboard
               </Link>
               <span>/</span>
               <Link
                 className="hover:text-foreground"
-                href={`/os/pursuits/${pursuitId}`}
+                href={`/pursuits/${pursuitId}`}
               >
                 {pursuit.name}
               </Link>

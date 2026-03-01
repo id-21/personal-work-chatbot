@@ -34,7 +34,7 @@ export function OSSidebar({ user, pursuits }: OSSidebarProps) {
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg">
               <Link
-                href="/os"
+                href="/"
                 onClick={() => setOpenMobile(false)}
               >
                 <span className="font-semibold text-base">Personal OS</span>
@@ -55,10 +55,10 @@ export function OSSidebar({ user, pursuits }: OSSidebarProps) {
               <SidebarMenuItem key={p.id}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === `/os/pursuits/${p.id}`}
+                  isActive={pathname === `/pursuits/${p.id}`}
                 >
                   <Link
-                    href={`/os/pursuits/${p.id}`}
+                    href={`/pursuits/${p.id}`}
                     onClick={() => setOpenMobile(false)}
                   >
                     <span className="truncate">{p.name}</span>
