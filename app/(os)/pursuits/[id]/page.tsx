@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/app/(auth)/auth";
 import { CreateProjectDialog } from "@/components/os/create-project-dialog";
 import { ProjectCard } from "@/components/os/project-card";
+import { ScopedChat } from "@/components/os/scoped-chat";
 import { getPursuitWithDetail } from "@/lib/db/queries";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -22,7 +23,7 @@ export default async function PursuitDetailPage({ params }: PursuitDetailPagePro
   return (
     <div className="flex h-dvh flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between border-b px-6 py-4">
+      <header className="flex items-center justify-between border-b px-6 py-4 shrink-0">
         <div className="flex items-center gap-3">
           <SidebarTrigger className="-ml-1" />
           <div>
@@ -45,7 +46,7 @@ export default async function PursuitDetailPage({ params }: PursuitDetailPagePro
 
       {/* Current state banner */}
       {pursuit.currentState && (
-        <div className="border-b bg-muted/40 px-6 py-3">
+        <div className="border-b bg-muted/40 px-6 py-3 shrink-0">
           <p className="text-sm">
             <span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
               Current state:{" "}
@@ -55,31 +56,46 @@ export default async function PursuitDetailPage({ params }: PursuitDetailPagePro
         </div>
       )}
 
-      {/* Projects */}
-      <main className="flex-1 overflow-y-auto p-6">
-        {pursuit.projects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="mb-4 text-4xl">📂</div>
-            <h2 className="mb-2 font-semibold text-lg">No projects yet</h2>
-            <p className="mb-6 max-w-sm text-muted-foreground text-sm">
-              Break this pursuit into projects — mid-level initiatives you're
-              actively working on.
+      {/* Two-column layout: Projects (left) + Chat (right) */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Projects panel */}
+        <main className="flex-1 overflow-y-auto p-6">
+          {pursuit.projects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="mb-4 text-4xl">📂</div>
+              <h2 className="mb-2 font-semibold text-lg">No projects yet</h2>
+              <p className="mb-6 max-w-sm text-muted-foreground text-sm">
+                Break this pursuit into projects — mid-level initiatives you're
+                actively working on.
+              </p>
+              <CreateProjectDialog pursuitId={id} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {pursuit.projects.map((p) => (
+                <ProjectCard
+                  key={p.id}
+                  project={p}
+                  pursuitId={id}
+                  tasks={p.tasks}
+                />
+              ))}
+            </div>
+          )}
+        </main>
+
+        {/* Chat panel */}
+        <div className="w-80 xl:w-96 border-l flex flex-col shrink-0">
+          <div className="px-4 py-3 border-b shrink-0">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              AI Assistant
             </p>
-            <CreateProjectDialog pursuitId={id} />
           </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {pursuit.projects.map((p) => (
-              <ProjectCard
-                key={p.id}
-                project={p}
-                pursuitId={id}
-                tasks={p.tasks}
-              />
-            ))}
+          <div className="flex-1 overflow-hidden">
+            <ScopedChat pursuitId={id} pursuitName={pursuit.name} />
           </div>
-        )}
-      </main>
+        </div>
+      </div>
     </div>
   );
 }

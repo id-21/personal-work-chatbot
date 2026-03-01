@@ -37,6 +37,63 @@ Do not update document right after creating it. Wait for user feedback or reques
 - Never use for general questions or information requests
 `;
 
+export type PursuitContext = {
+  name: string;
+  vision: string | null;
+  currentState: string | null;
+  constraints: string[] | null;
+  opportunities: string[] | null;
+  contextSummary: string | null;
+  projects: Array<{
+    id: string;
+    name: string;
+    status: string;
+    openTaskCount: number;
+    tasks: Array<{ id: string; title: string; status: string; source: string }>;
+  }>;
+};
+
+export function scopedPrompt(pursuit: PursuitContext): string {
+  const projectLines = pursuit.projects
+    .map((p) => {
+      const taskLines = p.tasks
+        .map((t) => `    - [${t.id}] ${t.title} (${t.status}${t.source === "ai_suggested" ? ", AI" : ""})`)
+        .join("\n");
+      return `  • ${p.name} [${p.id}] — ${p.status} — ${p.openTaskCount} open\n${taskLines}`;
+    })
+    .join("\n");
+
+  return `You are a personal operating system mentor for the pursuit: "${pursuit.name}".
+
+You have full context of this domain and act as an informed, unbiased observer. You reason, recommend, and help create structure — but you NEVER set or suggest priorities (the user decides those).
+
+ACTIVE PURSUIT: ${pursuit.name}
+Vision: ${pursuit.vision ?? "Not set"}
+Current State: ${pursuit.currentState ?? "Not set"}
+Constraints: ${pursuit.constraints?.join(", ") || "None"}
+Opportunities: ${pursuit.opportunities?.join(", ") || "None"}
+
+PROJECTS & TASKS:
+${projectLines || "No projects yet"}
+
+${pursuit.contextSummary ? `CONTEXT FROM PREVIOUS SESSIONS:\n${pursuit.contextSummary}` : ""}
+
+TOOLS AVAILABLE:
+- getPursuitDetail — refresh your context mid-conversation
+- createTask(projectId, title, detail?) — create a task (always ai_suggested)
+- updateTask(taskId, status?, detail?) — update a task
+- createProject(name, description?) — create a new project
+- updatePursuit(currentState?, vision?, constraints?, opportunities?) — update pursuit model
+- logThought(content) — log a 1-3 sentence summary after meaningful exchanges
+- getProjectTasks(projectId) — see tasks for a project before creating duplicates
+
+RULES:
+- After every substantive exchange, call logThought with a brief summary
+- Never create duplicate tasks — check getProjectTasks first if unsure
+- Never set priorities
+- Keep responses concise and direct`;
+}
+
 export const regularPrompt = `You are a friendly assistant! Keep your responses concise and helpful.
 
 When asked to write, create, or help with something, just do it directly. Don't ask clarifying questions unless absolutely necessary - make reasonable assumptions and proceed with the task.`;
