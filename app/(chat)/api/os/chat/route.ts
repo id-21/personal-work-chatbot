@@ -5,7 +5,9 @@ import {
   stepCountIs,
   streamText,
 } from "ai";
+import { after } from "next/server";
 import { auth } from "@/app/(auth)/auth";
+import { maybRegenerateSummary } from "@/lib/ai/summary";
 import { type PursuitContext, scopedPrompt } from "@/lib/ai/prompts";
 import { getOSModel } from "@/lib/ai/providers";
 import { createOSTools } from "@/lib/ai/tools/os/create-os-tools";
@@ -84,6 +86,18 @@ export async function POST(request: Request) {
       },
       generateId: generateUUID,
       onError: () => "Oops, something went wrong. Please try again.",
+    });
+
+    // After the response is sent, asynchronously check if we need to regenerate the summary
+    after(async () => {
+      try {
+        await maybRegenerateSummary({
+          pursuitId,
+          pursuitName: pursuitData.name,
+        });
+      } catch {
+        // Non-critical — summary regeneration failure should never affect the user
+      }
     });
 
     return createUIMessageStreamResponse({ stream });
