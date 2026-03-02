@@ -69,6 +69,8 @@ function PureMultimodalInput({
   selectedVisibilityType,
   selectedModelId,
   onModelChange,
+  disableUrlPush,
+  hideSuggestedActions,
 }: {
   chatId: string;
   input: string;
@@ -84,6 +86,8 @@ function PureMultimodalInput({
   selectedVisibilityType: VisibilityType;
   selectedModelId: string;
   onModelChange?: (modelId: string) => void;
+  disableUrlPush?: boolean;
+  hideSuggestedActions?: boolean;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
@@ -146,7 +150,9 @@ function PureMultimodalInput({
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
 
   const submitForm = useCallback(() => {
-    window.history.pushState({}, "", `/chat/${chatId}`);
+    if (!disableUrlPush) {
+      window.history.pushState({}, "", `/chat/${chatId}`);
+    }
 
     sendMessage({
       role: "user",
@@ -309,7 +315,8 @@ function PureMultimodalInput({
 
   return (
     <div className={cn("relative flex w-full flex-col gap-4", className)}>
-      {messages.length === 0 &&
+      {!hideSuggestedActions &&
+        messages.length === 0 &&
         attachments.length === 0 &&
         uploadQueue.length === 0 && (
           <SuggestedActions
@@ -442,6 +449,12 @@ export const MultimodalInput = memo(
       return false;
     }
     if (prevProps.selectedModelId !== nextProps.selectedModelId) {
+      return false;
+    }
+    if (prevProps.disableUrlPush !== nextProps.disableUrlPush) {
+      return false;
+    }
+    if (prevProps.hideSuggestedActions !== nextProps.hideSuggestedActions) {
       return false;
     }
 

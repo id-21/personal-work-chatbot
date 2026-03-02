@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import type { UIMessage } from "ai";
+import { useCallback, useState } from "react";
+import { MultimodalInput } from "@/components/multimodal-input";
+import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+import type { Attachment } from "@/lib/types";
 import { RoutingChip } from "./routing-chip";
 
 interface RoutingResult {
@@ -14,36 +16,47 @@ interface RoutingResult {
 }
 
 export function HomeInput() {
-  const [value, setValue] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [input, setInput] = useState("");
+  const [status, setStatus] = useState<"ready" | "submitted">("ready");
   const [result, setResult] = useState<RoutingResult | null>(null);
+  const [messages] = useState<UIMessage[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState(DEFAULT_CHAT_MODEL);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!value.trim() || loading) return;
+  const handleSendMessage = useCallback(
+    async (message: { role: string; parts: Array<{ type: string; text?: string }> }) => {
+      const textPart = message.parts.find((p) => p.type === "text");
+      const text = textPart?.text?.trim() ?? "";
+      if (!text) return;
 
-    const message = value.trim();
-    setValue("");
-    setResult(null);
-    setLoading(true);
+      setResult(null);
+      setStatus("submitted");
 
-    try {
-      const res = await fetch("/api/os/route", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
-      });
+      try {
+        const res = await fetch("/api/os/route", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text }),
+        });
 
-      if (!res.ok) throw new Error("Routing failed");
+        if (!res.ok) throw new Error("Routing failed");
 
-      const data: RoutingResult = await res.json();
-      setResult(data);
-    } catch {
-      setResult({ chipText: "Something went wrong — try again", pursuitId: null, projectId: null, entityId: null, action: "error" });
-    } finally {
-      setLoading(false);
-    }
-  };
+        const data: RoutingResult = await res.json();
+        setResult(data);
+      } catch {
+        setResult({
+          chipText: "Something went wrong — try again",
+          pursuitId: null,
+          projectId: null,
+          entityId: null,
+          action: "error",
+        });
+      } finally {
+        setStatus("ready");
+      }
+    },
+    []
+  );
 
   return (
     <div className="border-t bg-background p-4 space-y-2">
@@ -54,18 +67,25 @@ export function HomeInput() {
           onDismiss={() => setResult(null)}
         />
       )}
-      <form className="flex gap-2" onSubmit={handleSubmit}>
-        <Input
-          className="flex-1"
-          disabled={loading}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="What's on your mind? (e.g. 'I need to call the logistics partner')"
-          value={value}
-        />
-        <Button disabled={!value.trim() || loading} type="submit">
-          {loading ? "Routing…" : "Add"}
-        </Button>
-      </form>
+      <MultimodalInput
+        attachments={attachments}
+        chatId=""
+        disableUrlPush={true}
+        hideSuggestedActions={true}
+        input={input}
+        messages={messages}
+        onModelChange={setSelectedModelId}
+        selectedModelId={selectedModelId}
+        selectedVisibilityType="private"
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        sendMessage={handleSendMessage as any}
+        setAttachments={setAttachments}
+        setInput={setInput}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setMessages={(() => {}) as any}
+        status={status}
+        stop={() => {}}
+      />
     </div>
   );
 }

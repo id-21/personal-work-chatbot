@@ -4,8 +4,9 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { MultimodalInput } from "@/components/multimodal-input";
+import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+import type { Attachment } from "@/lib/types";
 import { generateUUID } from "@/lib/utils";
 
 interface ScopedChatProps {
@@ -17,8 +18,10 @@ export function ScopedChat({ pursuitId, pursuitName }: ScopedChatProps) {
   const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState(DEFAULT_CHAT_MODEL);
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, stop, setMessages } = useChat({
     generateId: generateUUID,
     transport: new DefaultChatTransport({
       api: "/api/os/chat",
@@ -38,16 +41,6 @@ export function ScopedChat({ pursuitId, pursuitName }: ScopedChatProps) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const handleSend = () => {
-    const text = input.trim();
-    if (!text || isLoading) return;
-    setInput("");
-    sendMessage({
-      role: "user",
-      parts: [{ type: "text", text }],
-    });
-  };
 
   return (
     <div className="flex flex-col h-full">
@@ -95,30 +88,24 @@ export function ScopedChat({ pursuitId, pursuitName }: ScopedChatProps) {
       </div>
 
       {/* Input */}
-      <div className="border-t p-3 flex gap-2 items-end">
-        <Textarea
-          className="flex-1 resize-none min-h-[36px] max-h-[120px]"
-          disabled={isLoading}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          placeholder={`Ask about ${pursuitName}…`}
-          rows={1}
-          value={input}
+      <div className="border-t p-3">
+        <MultimodalInput
+          attachments={attachments}
+          chatId={pursuitId}
+          disableUrlPush={true}
+          hideSuggestedActions={true}
+          input={input}
+          messages={messages}
+          onModelChange={setSelectedModelId}
+          selectedModelId={selectedModelId}
+          selectedVisibilityType="private"
+          sendMessage={sendMessage}
+          setAttachments={setAttachments}
+          setInput={setInput}
+          setMessages={setMessages as any}
+          status={status}
+          stop={stop}
         />
-        <Button
-          className="shrink-0"
-          disabled={!input.trim() || isLoading}
-          onClick={handleSend}
-          size="sm"
-          type="button"
-        >
-          Send
-        </Button>
       </div>
     </div>
   );
