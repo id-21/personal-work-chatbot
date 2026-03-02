@@ -3,7 +3,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, Mic, Square } from "lucide-react";
 import {
   type ChangeEvent,
   type Dispatch,
@@ -16,6 +16,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useLocalStorage, useWindowSize } from "usehooks-ts";
+import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import {
   ModelSelector,
   ModelSelectorContent,
@@ -295,6 +296,17 @@ function PureMultimodalInput({
     return () => textarea.removeEventListener("paste", handlePaste);
   }, [handlePaste]);
 
+  const handleTranscript = useCallback(
+    (text: string) => {
+      setInput((prev) => (prev ? `${prev} ${text}` : text));
+      textareaRef.current?.focus();
+    },
+    [setInput]
+  );
+
+  const { recordingState, startRecording, stopRecording } =
+    useAudioRecorder(handleTranscript);
+
   return (
     <div className={cn("relative flex w-full flex-col gap-4", className)}>
       {messages.length === 0 &&
@@ -384,6 +396,12 @@ function PureMultimodalInput({
               selectedModelId={selectedModelId}
               status={status}
             />
+            <MicButton
+              recordingState={recordingState}
+              startRecording={startRecording}
+              stopRecording={stopRecording}
+              status={status}
+            />
             <ModelSelectorCompact
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
@@ -460,6 +478,49 @@ function PureAttachmentsButton({
 }
 
 const AttachmentsButton = memo(PureAttachmentsButton);
+
+function PureMicButton({
+  recordingState,
+  startRecording,
+  stopRecording,
+  status,
+}: {
+  recordingState: "idle" | "recording" | "transcribing";
+  startRecording: () => void;
+  stopRecording: () => void;
+  status: UseChatHelpers<ChatMessage>["status"];
+}) {
+  const isRecording = recordingState === "recording";
+  const isTranscribing = recordingState === "transcribing";
+
+  return (
+    <Button
+      className={cn(
+        "aspect-square h-8 rounded-lg p-1 transition-colors hover:bg-accent",
+        isRecording && "text-destructive hover:text-destructive"
+      )}
+      data-testid="mic-button"
+      disabled={status !== "ready" || isTranscribing}
+      onClick={(event) => {
+        event.preventDefault();
+        if (isRecording) {
+          stopRecording();
+        } else {
+          startRecording();
+        }
+      }}
+      variant="ghost"
+    >
+      {isRecording ? (
+        <Square size={14} style={{ width: 14, height: 14 }} />
+      ) : (
+        <Mic size={14} style={{ width: 14, height: 14 }} />
+      )}
+    </Button>
+  );
+}
+
+const MicButton = memo(PureMicButton);
 
 function PureModelSelectorCompact({
   selectedModelId,
