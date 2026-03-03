@@ -81,7 +81,7 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
 
   const openProfile = () => {
     setProfileOpen(true);
-    if (!profileData) loadProfile();
+    loadProfile();
   };
 
   useEffect(() => {
@@ -139,17 +139,36 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
                 .filter((p) => p.type === "text")
                 .map((p) => (p.type === "text" ? p.text : ""))
                 .join("");
+              const toolCalls = msg.parts.filter((p) => p.type === "tool-invocation");
 
               if (!textContent && msg.role === "assistant") return null;
+
+              const debugBadges = process.env.NODE_ENV === "development" && toolCalls.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {toolCalls.map((p) => {
+                    if (p.type !== "tool-invocation") return null;
+                    const { toolName, state } = p.toolInvocation;
+                    return (
+                      <span
+                        key={p.toolInvocation.toolCallId}
+                        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                      >
+                        ⚙ {toolName}{state === "result" ? " ✓" : " …"}
+                      </span>
+                    );
+                  })}
+                </div>
+              );
 
               // Routing confirmations → chip style
               if (msg.role === "assistant" && isRoutingChip(textContent)) {
                 return (
-                  <div key={msg.id} className="flex justify-start">
+                  <div key={msg.id} className="flex flex-col items-start">
                     <div className="inline-flex items-center gap-1.5 rounded-full border bg-muted/60 px-3 py-1 text-xs text-muted-foreground animate-in fade-in slide-in-from-bottom-1 duration-200">
                       <span className="text-green-500">✓</span>
                       <span>{textContent.replace(/\*\*/g, "")}</span>
                     </div>
+                    {debugBadges}
                   </div>
                 );
               }
@@ -158,7 +177,7 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
               return (
                 <div
                   key={msg.id}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
                 >
                   <div
                     className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
@@ -169,6 +188,7 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
                   >
                     <p className="whitespace-pre-wrap">{textContent}</p>
                   </div>
+                  {debugBadges}
                 </div>
               );
             })}
