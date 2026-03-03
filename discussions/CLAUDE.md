@@ -8,6 +8,7 @@ Project planning and design documentation. These are not code files — they are
 **Core Design Docs (read these first):**
 - `personal_os_context.md` - **Product spec.** What the app is, the two modes (home/scoped), the data hierarchy, what the AI must never do.
 - `personal_os_arch.md` - **Technical architecture.** DB schema (reference), API design, AI tool specs, system prompt layers, data flow diagrams.
+- `data-flow-analysis.md` - **Verified code audit.** Exactly what data is read/written, which functions, which line numbers, and what the AI actually sees. More accurate than personal_os_arch.md where they diverge.
 
 **Feature Specs:**
 - `audio_input_feat.md` - Audio/voice input feature spec
