@@ -118,9 +118,23 @@ export async function POST(request: Request) {
       }),
     };
 
-    // Routing-only tools (create tasks/projects)
+    // Routing-only tools (create tasks/projects + answer questions)
     const routingTools = {
       ...sharedTools,
+      getUserProfile: tool({
+        description:
+          "Fetch what is currently stored about the user — name, values, and background context. Call this when the user asks what you know about them or asks for a summary of their stored data.",
+        inputSchema: z.object({}),
+        execute: async () => {
+          const model = await getUserModelByUserId({ userId });
+          if (!model) return { stored: "Nothing stored yet." };
+          return {
+            name: model.name ?? null,
+            values: model.values ?? [],
+            rawContext: model.rawContext ?? null,
+          };
+        },
+      }),
       createTask: tool({
         description:
           "Create a task under an existing project. Use when the user's message maps to an action item in one of the existing pursuits.",
