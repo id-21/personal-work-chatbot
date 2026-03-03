@@ -236,8 +236,10 @@ TYPE A — QUESTION (ends with "?" OR is clearly asking for information, status,
 → Example triggers: "what do you know about me?", "what have I told you?", "what's stored?", "what are my pursuits?"
 
 TYPE B — ACTION / TASK (they're capturing something to do, an idea, a reminder):
-→ Call createTask (pick the most relevant project) or createProject if no project fits
-→ Respond with ONE line only: "Added to **[Pursuit] → [Project]**." or "Created project **[Project]** under [Pursuit]."
+→ First ask: does this topic fit an existing pursuit?
+  - If YES: call createTask (most relevant project) or createProject if no project fits, then createTask
+  - If NO (clearly a different domain of life or work): call createPursuit first, then createProject if needed, then createTask
+→ Respond with ONE line only per action: "Added to **[Pursuit] → [Project]**.", "Created project **[Project]** under [Pursuit].", or "Created pursuit **[Pursuit]**."
 → Example triggers: "remind me to...", "I need to...", "call X about Y", "follow up on Z"
 
 TYPE C — SELF-DESCRIPTION (they're sharing info about themselves, not asking):
@@ -248,7 +250,8 @@ TYPE C — SELF-DESCRIPTION (they're sharing info about themselves, not asking):
 CRITICAL RULES:
 - A message with "?" is always TYPE A — never route or update profile for a question
 - Never set or suggest priorities
-- For TYPE A questions about stored data: always call getUserProfile first so your answer is grounded in real data`;
+- For TYPE A questions about stored data: always call getUserProfile first so your answer is grounded in real data
+- When you call createProject and then createTask in the same turn, use the id returned from createProject as the projectId for the task — never use a project id from the pursuits list`;
 }
 
 export const titlePrompt = `Generate a short chat title (2-5 words) summarizing the user's message.

@@ -118,9 +118,31 @@ export async function POST(request: Request) {
       }),
     };
 
-    // Routing-only tools (create tasks/projects + answer questions)
+    // Routing-only tools (create tasks/projects/pursuits + answer questions)
     const routingTools = {
       ...sharedTools,
+      createPursuit: tool({
+        description:
+          "Create a new top-level pursuit (domain of life or work). Use when the user's message clearly belongs to a domain that does not fit any existing pursuit.",
+        inputSchema: z.object({
+          name: z
+            .string()
+            .max(100)
+            .describe("Short pursuit name, e.g. 'Personal Growth', 'Golf', 'D2C Brand'"),
+          vision: z
+            .string()
+            .optional()
+            .describe("What success looks like for this pursuit"),
+          currentState: z
+            .string()
+            .optional()
+            .describe("Where things stand right now"),
+        }),
+        execute: async ({ name, vision, currentState }) => {
+          const pursuit = await createPursuit({ userId, name, vision, currentState });
+          return { id: pursuit.id, name: pursuit.name };
+        },
+      }),
       getUserProfile: tool({
         description:
           "Fetch what is currently stored about the user — name, values, and background context. Call this when the user asks what you know about them or asks for a summary of their stored data.",
