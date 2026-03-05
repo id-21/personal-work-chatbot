@@ -10,6 +10,7 @@ import {
   gte,
   inArray,
   lt,
+  sql,
   type SQL,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -25,7 +26,11 @@ import {
   contextSummary,
   type DBMessage,
   document,
+  memoryChunk,
+  type MemoryChunk,
   message,
+  narrative,
+  type Narrative,
   type Project,
   project,
   type Pursuit,
@@ -1225,5 +1230,174 @@ export async function getPursuitWithDetail({ id }: { id: string }) {
       "bad_request:database",
       "Failed to get pursuit with detail"
     );
+  }
+}
+
+// ─── Memory Chunks ────────────────────────────────────────────────────────────
+
+export async function createMemoryChunk({
+  userId,
+  text,
+  embedding,
+  tags = [],
+  entityType,
+  linkedPursuits = [],
+  importance = 0.5,
+}: {
+  userId: string;
+  text: string;
+  embedding: number[];
+  tags?: string[];
+  entityType?: MemoryChunk["entityType"];
+  linkedPursuits?: string[];
+  importance?: number;
+}): Promise<MemoryChunk> {
+  try {
+    const [created] = await db
+      .insert(memoryChunk)
+      .values({
+        userId,
+        text,
+        embedding,
+        tags,
+        entityType: entityType ?? null,
+        linkedPursuits,
+        importance,
+      })
+      .returning();
+    return created;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to create memory chunk"
+    );
+  }
+}
+
+export async function vectorSearch({
+  queryEmbedding,
+  userId,
+  matchCount,
+  filterPursuits,
+}: {
+  queryEmbedding: number[];
+  userId: string;
+  matchCount: number;
+  filterPursuits?: string[];
+}): Promise<
+  Array<{
+    id: string;
+    text: string;
+    tags: string[];
+    importance: number;
+    similarity: number;
+  }>
+> {
+  try {
+    const embeddingStr = `[${queryEmbedding.join(",")}]`;
+    const result = await db.execute(
+      sql`SELECT * FROM vector_search(
+        ${embeddingStr}::vector,
+        ${matchCount}::int,
+        ${userId}::uuid,
+        ${filterPursuits ?? null}::text[]
+      )`
+    );
+    return result.rows as Array<{
+      id: string;
+      text: string;
+      tags: string[];
+      importance: number;
+      similarity: number;
+    }>;
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to run vector search");
+  }
+}
+
+export async function supersedeChunk({
+  id,
+  supersededById,
+}: {
+  id: string;
+  supersededById: string;
+}): Promise<void> {
+  try {
+    await db
+      .update(memoryChunk)
+      .set({ supersededBy: supersededById })
+      .where(eq(memoryChunk.id, id));
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to supersede memory chunk"
+    );
+  }
+}
+
+// ─── Narratives ───────────────────────────────────────────────────────────────
+
+export async function getNarrativeByTopic({
+  userId,
+  topic,
+}: {
+  userId: string;
+  topic: string;
+}): Promise<Narrative | null> {
+  try {
+    const [result] = await db
+      .select()
+      .from(narrative)
+      .where(and(eq(narrative.userId, userId), eq(narrative.topic, topic)));
+    return result ?? null;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get narrative by topic"
+    );
+  }
+}
+
+export async function upsertNarrative({
+  userId,
+  topic,
+  topicType,
+  content,
+  summary,
+}: {
+  userId: string;
+  topic: string;
+  topicType: Narrative["topicType"];
+  content: string;
+  summary?: string;
+}): Promise<Narrative> {
+  try {
+    const existing = await getNarrativeByTopic({ userId, topic });
+    if (existing) {
+      const [updated] = await db
+        .update(narrative)
+        .set({
+          content,
+          ...(summary !== undefined && { summary }),
+          version: existing.version + 1,
+          lastUpdated: new Date(),
+        })
+        .where(eq(narrative.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db
+      .insert(narrative)
+      .values({
+        userId,
+        topic,
+        topicType,
+        content,
+        summary: summary ?? null,
+      })
+      .returning();
+    return created;
+  } catch (_error) {
+    throw new ChatSDKError("bad_request:database", "Failed to upsert narrative");
   }
 }

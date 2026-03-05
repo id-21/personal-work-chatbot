@@ -254,6 +254,54 @@ CRITICAL RULES:
 - When you call createProject and then createTask in the same turn, use the id returned from createProject as the projectId for the task — never use a project id from the pursuits list`;
 }
 
+export function intentRouterPrompt(
+  message: string,
+  pursuitNames: string[]
+): string {
+  return `Classify this user message and return JSON.
+
+USER MESSAGE:
+${message}
+
+KNOWN PURSUITS:
+${pursuitNames.length > 0 ? pursuitNames.join(", ") : "None"}
+
+Return JSON with exactly these fields:
+- intents: array of applicable types from ["FACT", "TASK", "QUESTION", "CONTEXT_UPDATE"]
+  - FACT: they are sharing a piece of information or fact about themselves, their work, or their world
+  - TASK: they are capturing something to do or an action item
+  - QUESTION: they are asking for information
+  - CONTEXT_UPDATE: they are correcting or updating something previously stated
+- entities: array of notable entity names mentioned (people, companies, projects, concepts)
+- pursuitsAffected: subset of the known pursuits that this message relates to (empty array if none)
+
+Respond with only the JSON object, no other text.`;
+}
+
+export function narrativeAppendPrompt(
+  topic: string,
+  existingContent: string,
+  newInfo: string
+): string {
+  const today = new Date().toISOString().split("T")[0];
+  return `You maintain a living document about "${topic}". Your job is to append a new timestamped entry based on new information.
+
+EXISTING DOCUMENT:
+${existingContent || "(empty — this is the first entry)"}
+
+NEW INFORMATION (${today}):
+${newInfo}
+
+Instructions:
+1. Append a new entry at the end with the date as a heading: ## ${today}
+2. Summarise what was shared in 2-4 sentences, factual and concise
+3. If the new information contradicts something in the existing document, add [SUPERSEDED] next to the old fact inline
+4. Keep the total document under 3000 words — if it exceeds that, summarise and compress older entries
+5. Return the FULL updated document (all previous entries + new entry)
+
+Return only the document text, no other commentary.`;
+}
+
 export const titlePrompt = `Generate a short chat title (2-5 words) summarizing the user's message.
 
 Output ONLY the title text. No prefixes, no formatting.
