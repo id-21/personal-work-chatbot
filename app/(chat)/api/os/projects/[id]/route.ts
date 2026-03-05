@@ -20,7 +20,10 @@ export async function GET(
   const projectData = await getProjectById({ id });
 
   if (!projectData) {
-    return new ChatSDKError("not_found:database", "Project not found").toResponse();
+    return new ChatSDKError(
+      "not_found:database",
+      "Project not found"
+    ).toResponse();
   }
 
   const pursuitData = await getPursuitById({ id: projectData.pursuitId });
@@ -44,7 +47,10 @@ export async function PUT(
   const projectData = await getProjectById({ id });
 
   if (!projectData) {
-    return new ChatSDKError("not_found:database", "Project not found").toResponse();
+    return new ChatSDKError(
+      "not_found:database",
+      "Project not found"
+    ).toResponse();
   }
 
   const pursuitData = await getPursuitById({ id: projectData.pursuitId });
@@ -55,6 +61,9 @@ export async function PUT(
   const body = await request.json();
   const { name, description, status } = body;
 
-  const updated = await updateProjectById({ id, updates: { name, description, status } });
+  const updated = await updateProjectById({
+    id,
+    updates: { name, description, status },
+  });
   return Response.json(updated);
 }

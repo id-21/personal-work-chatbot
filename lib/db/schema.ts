@@ -11,8 +11,8 @@ import {
   timestamp,
   uuid,
   varchar,
+  vector,
 } from "drizzle-orm/pg-core";
-import { vector } from "drizzle-orm/pg-core";
 
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -243,7 +243,10 @@ export const task = pgTable("tasks", {
   source: varchar("source", { enum: ["user", "ai_suggested"] })
     .notNull()
     .default("user"),
-  contextChunkIds: json("contextChunkIds").$type<string[]>().notNull().default([]),
+  contextChunkIds: json("contextChunkIds")
+    .$type<string[]>()
+    .notNull()
+    .default([]),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
@@ -284,7 +287,10 @@ export const memoryChunk = pgTable("memory_chunks", {
   entityType: varchar("entityType", {
     enum: ["business", "person", "challenge", "insight", "preference"],
   }),
-  linkedPursuits: json("linkedPursuits").$type<string[]>().notNull().default([]),
+  linkedPursuits: json("linkedPursuits")
+    .$type<string[]>()
+    .notNull()
+    .default([]),
   importance: real("importance").notNull().default(0.5),
   supersededBy: uuid("supersededBy"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),

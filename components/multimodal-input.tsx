@@ -16,7 +16,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useLocalStorage, useWindowSize } from "usehooks-ts";
-import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import {
   ModelSelector,
   ModelSelectorContent,
@@ -28,6 +27,7 @@ import {
   ModelSelectorName,
   ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
+import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import {
   chatModels,
   DEFAULT_CHAT_MODEL,
@@ -406,8 +406,8 @@ function PureMultimodalInput({
             <MicButton
               recordingState={recordingState}
               startRecording={startRecording}
-              stopRecording={stopRecording}
               status={status}
+              stopRecording={stopRecording}
             />
             <ModelSelectorCompact
               onModelChange={onModelChange}

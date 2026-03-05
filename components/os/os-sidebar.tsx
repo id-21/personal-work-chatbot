@@ -2,10 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
-import type { Pursuit } from "@/lib/db/schema";
-import { cn } from "@/lib/utils";
 import { SidebarUserNav } from "@/components/sidebar-user-nav";
 import {
   Sidebar,
@@ -17,6 +14,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import type { Pursuit } from "@/lib/db/schema";
 
 interface OSSidebarProps {
   user: User | undefined;
@@ -33,10 +31,7 @@ export function OSSidebar({ user, pursuits }: OSSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg">
-              <Link
-                href="/"
-                onClick={() => setOpenMobile(false)}
-              >
+              <Link href="/" onClick={() => setOpenMobile(false)}>
                 <span className="font-semibold text-base">Personal OS</span>
               </Link>
             </SidebarMenuButton>

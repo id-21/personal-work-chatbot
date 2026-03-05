@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import type { Pursuit } from "@/lib/db/schema";
 import {
   Card,
   CardContent,
@@ -9,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { Pursuit } from "@/lib/db/schema";
 
 interface PursuitCardProps {
   pursuit: Pursuit;

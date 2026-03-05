@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,7 +33,11 @@ export function CreatePursuitDialog() {
       const res = await fetch("/api/os/pursuits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), vision: vision.trim() || undefined, currentState: currentState.trim() || undefined }),
+        body: JSON.stringify({
+          name: name.trim(),
+          vision: vision.trim() || undefined,
+          currentState: currentState.trim() || undefined,
+        }),
       });
 
       if (!res.ok) throw new Error("Failed to create pursuit");

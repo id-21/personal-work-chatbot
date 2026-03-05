@@ -1,15 +1,15 @@
-import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/app/(auth)/auth";
 import { CreateTaskDialog } from "@/components/os/create-task-dialog";
 import { TaskList } from "@/components/os/task-list";
+import { Badge } from "@/components/ui/badge";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   getProjectById,
   getPursuitById,
   getTasksByProjectId,
 } from "@/lib/db/queries";
-import { Badge } from "@/components/ui/badge";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Active",
@@ -22,7 +22,9 @@ interface ProjectDetailPageProps {
   params: Promise<{ id: string; projectId: string }>;
 }
 
-export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
+export default async function ProjectDetailPage({
+  params,
+}: ProjectDetailPageProps) {
   const session = await auth();
   if (!session?.user) redirect("/login");
 

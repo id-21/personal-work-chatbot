@@ -39,7 +39,11 @@ export async function POST(request: Request) {
         id: p.id,
         name: p.name,
         currentState: p.currentState,
-        projects: p.projects.map((pr) => ({ id: pr.id, name: pr.name, status: pr.status })),
+        projects: p.projects.map((pr) => ({
+          id: pr.id,
+          name: pr.name,
+          status: pr.status,
+        })),
       })),
       null,
       2
@@ -53,14 +57,22 @@ export async function POST(request: Request) {
     });
 
     if (routing.action === "unclassified") {
-      return Response.json({ chipText: "Nothing to route — create a pursuit first", entityId: null });
+      return Response.json({
+        chipText: "Nothing to route — create a pursuit first",
+        entityId: null,
+      });
     }
 
     let entityId: string | null = null;
     let finalProjectId = routing.projectId;
-    let dbAction: "created_task" | "created_project" | "no_action" = "no_action";
+    let dbAction: "created_task" | "created_project" | "no_action" =
+      "no_action";
 
-    if (routing.action === "create_project" && routing.pursuitId && routing.newProjectName) {
+    if (
+      routing.action === "create_project" &&
+      routing.pursuitId &&
+      routing.newProjectName
+    ) {
       const newProject = await createProject({
         pursuitId: routing.pursuitId,
         name: routing.newProjectName,

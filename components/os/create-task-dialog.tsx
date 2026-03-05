@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -94,7 +94,11 @@ export function CreateTaskDialog({ projectId }: CreateTaskDialogProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => setOpen(false)} type="button" variant="outline">
+            <Button
+              onClick={() => setOpen(false)}
+              type="button"
+              variant="outline"
+            >
               Cancel
             </Button>
             <Button disabled={loading || !title.trim()} type="submit">

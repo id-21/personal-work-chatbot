@@ -32,7 +32,8 @@ interface ProfileData {
 }
 
 // Routing confirmations are short one-liners — render as chips, not bubbles
-const CHIP_PATTERN = /^(Added to|Updated your profile|Created project|Created pursuit)/i;
+const CHIP_PATTERN =
+  /^(Added to|Updated your profile|Created project|Created pursuit)/i;
 
 function isRoutingChip(text: string): boolean {
   return CHIP_PATTERN.test(text.trim()) && text.trim().length < 140;
@@ -95,10 +96,10 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
       {/* Profile button — always visible top-right */}
       <div className="absolute right-4 top-3 z-10">
         <Button
-          variant="ghost"
-          size="sm"
           className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
           onClick={openProfile}
+          size="sm"
+          variant="ghost"
         >
           <User className="size-4" />
           <span className="text-xs">My Profile</span>
@@ -107,31 +108,7 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
 
       {/* Main area: either pursuit cards or chat messages */}
       <div className="flex-1 overflow-y-auto">
-        {!hasSentMessage ? (
-          /* Pursuit cards view */
-          <div className="p-6">
-            {pursuits.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="mb-4 text-5xl">🗺️</div>
-                <h2 className="mb-2 font-semibold text-xl">
-                  Welcome to your Personal OS
-                  {userName ? `, ${userName}` : ""}
-                </h2>
-                <p className="mb-6 max-w-md text-muted-foreground text-sm">
-                  Tell me about yourself and what you work on — I'll help you
-                  set up your first pursuits. Or create one manually below.
-                </p>
-                <CreatePursuitDialog />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {pursuits.map((p) => (
-                  <PursuitCard key={p.id} pursuit={p} />
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
+        {hasSentMessage ? (
           /* Chat messages view */
           <div className="p-4 pt-12 space-y-3">
             {messages.map((msg) => {
@@ -139,31 +116,35 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
                 .filter((p) => p.type === "text")
                 .map((p) => (p.type === "text" ? p.text : ""))
                 .join("");
-              const toolCalls = msg.parts.filter((p) => p.type === "tool-invocation");
+              const toolCalls = msg.parts.filter(
+                (p) => p.type === "tool-invocation"
+              );
 
               if (!textContent && msg.role === "assistant") return null;
 
-              const debugBadges = process.env.NODE_ENV === "development" && toolCalls.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {toolCalls.map((p) => {
-                    if (p.type !== "tool-invocation") return null;
-                    const { toolName, state } = p.toolInvocation;
-                    return (
-                      <span
-                        key={p.toolInvocation.toolCallId}
-                        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                      >
-                        ⚙ {toolName}{state === "result" ? " ✓" : " …"}
-                      </span>
-                    );
-                  })}
-                </div>
-              );
+              const debugBadges = process.env.NODE_ENV === "development" &&
+                toolCalls.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {toolCalls.map((p) => {
+                      if (p.type !== "tool-invocation") return null;
+                      const { toolName, state } = p.toolInvocation;
+                      return (
+                        <span
+                          className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                          key={p.toolInvocation.toolCallId}
+                        >
+                          ⚙ {toolName}
+                          {state === "result" ? " ✓" : " …"}
+                        </span>
+                      );
+                    })}
+                  </div>
+                );
 
               // Routing confirmations → chip style
               if (msg.role === "assistant" && isRoutingChip(textContent)) {
                 return (
-                  <div key={msg.id} className="flex flex-col items-start">
+                  <div className="flex flex-col items-start" key={msg.id}>
                     <div className="inline-flex items-center gap-1.5 rounded-full border bg-muted/60 px-3 py-1 text-xs text-muted-foreground animate-in fade-in slide-in-from-bottom-1 duration-200">
                       <span className="text-green-500">✓</span>
                       <span>{textContent.replace(/\*\*/g, "")}</span>
@@ -176,8 +157,8 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
               // Regular messages → bubble style
               return (
                 <div
-                  key={msg.id}
                   className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
+                  key={msg.id}
                 >
                   <div
                     className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
@@ -200,6 +181,30 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
               </div>
             )}
             <div ref={bottomRef} />
+          </div>
+        ) : (
+          /* Pursuit cards view */
+          <div className="p-6">
+            {pursuits.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="mb-4 text-5xl">🗺️</div>
+                <h2 className="mb-2 font-semibold text-xl">
+                  Welcome to your Personal OS
+                  {userName ? `, ${userName}` : ""}
+                </h2>
+                <p className="mb-6 max-w-md text-muted-foreground text-sm">
+                  Tell me about yourself and what you work on — I'll help you
+                  set up your first pursuits. Or create one manually below.
+                </p>
+                <CreatePursuitDialog />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {pursuits.map((p) => (
+                  <PursuitCard key={p.id} pursuit={p} />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -226,8 +231,8 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
       </div>
 
       {/* Profile Sheet */}
-      <Sheet open={profileOpen} onOpenChange={setProfileOpen}>
-        <SheetContent side="right" className="w-80 sm:w-96">
+      <Sheet onOpenChange={setProfileOpen} open={profileOpen}>
+        <SheetContent className="w-80 sm:w-96" side="right">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <User className="size-4" />
@@ -245,18 +250,28 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
             ) : profileData ? (
               <>
                 <div className="space-y-1">
-                  <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Name</p>
-                  <p>{profileData.name ?? <span className="text-muted-foreground italic">Not set</span>}</p>
+                  <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                    Name
+                  </p>
+                  <p>
+                    {profileData.name ?? (
+                      <span className="text-muted-foreground italic">
+                        Not set
+                      </span>
+                    )}
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Values</p>
+                  <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                    Values
+                  </p>
                   {profileData.values && profileData.values.length > 0 ? (
                     <div className="flex flex-wrap gap-1.5">
                       {profileData.values.map((v) => (
                         <span
-                          key={v}
                           className="rounded-full border bg-muted px-2.5 py-0.5 text-xs"
+                          key={v}
                         >
                           {v}
                         </span>
@@ -268,14 +283,20 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Background</p>
+                  <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                    Background
+                  </p>
                   <p className="leading-relaxed text-muted-foreground">
-                    {profileData.rawContext ?? <span className="italic">Not set</span>}
+                    {profileData.rawContext ?? (
+                      <span className="italic">Not set</span>
+                    )}
                   </p>
                 </div>
               </>
             ) : (
-              <p className="text-muted-foreground italic">Nothing stored yet.</p>
+              <p className="text-muted-foreground italic">
+                Nothing stored yet.
+              </p>
             )}
           </div>
         </SheetContent>

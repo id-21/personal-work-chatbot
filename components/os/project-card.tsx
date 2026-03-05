@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { Project, Task } from "@/lib/db/schema";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -8,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { Project, Task } from "@/lib/db/schema";
 
 const STATUS_VARIANTS: Record<
   Project["status"],
@@ -33,7 +33,9 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, tasks, pursuitId }: ProjectCardProps) {
-  const openCount = tasks.filter((t) => t.status === "open" || t.status === "in_progress").length;
+  const openCount = tasks.filter(
+    (t) => t.status === "open" || t.status === "in_progress"
+  ).length;
 
   return (
     <Link href={`/pursuits/${pursuitId}/projects/${project.id}`}>

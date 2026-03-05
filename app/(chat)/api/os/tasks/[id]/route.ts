@@ -21,13 +21,19 @@ export async function PUT(
   const taskData = await getTaskById({ id });
 
   if (!taskData) {
-    return new ChatSDKError("not_found:database", "Task not found").toResponse();
+    return new ChatSDKError(
+      "not_found:database",
+      "Task not found"
+    ).toResponse();
   }
 
   // Verify ownership via project → pursuit → user
   const projectData = await getProjectById({ id: taskData.projectId });
   if (!projectData) {
-    return new ChatSDKError("not_found:database", "Project not found").toResponse();
+    return new ChatSDKError(
+      "not_found:database",
+      "Project not found"
+    ).toResponse();
   }
 
   const pursuitData = await getPursuitById({ id: projectData.pursuitId });
@@ -38,6 +44,9 @@ export async function PUT(
   const body = await request.json();
   const { title, detail, status } = body;
 
-  const updated = await updateTaskById({ id, updates: { title, detail, status } });
+  const updated = await updateTaskById({
+    id,
+    updates: { title, detail, status },
+  });
   return Response.json(updated);
 }

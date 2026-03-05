@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import type { Task } from "@/lib/db/schema";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -10,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Task } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
 
 const STATUS_LABELS: Record<Task["status"], string> = {
@@ -21,9 +21,11 @@ const STATUS_LABELS: Record<Task["status"], string> = {
 
 const STATUS_CLASSES: Record<Task["status"], string> = {
   open: "border-zinc-300 text-zinc-600 dark:border-zinc-600 dark:text-zinc-400",
-  in_progress: "border-blue-300 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+  in_progress:
+    "border-blue-300 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
   done: "border-green-300 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300",
-  dismissed: "border-red-200 bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
+  dismissed:
+    "border-red-200 bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
 };
 
 interface TaskItemProps {
@@ -80,10 +82,7 @@ export function TaskItem({ task }: TaskItemProps) {
         )}
         <Select onValueChange={handleStatusChange} value={status}>
           <SelectTrigger
-            className={cn(
-              "h-7 w-32 border text-xs",
-              STATUS_CLASSES[status]
-            )}
+            className={cn("h-7 w-32 border text-xs", STATUS_CLASSES[status])}
           >
             <SelectValue />
           </SelectTrigger>

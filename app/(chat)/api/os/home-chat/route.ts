@@ -6,8 +6,10 @@ import {
   streamText,
   tool,
 } from "ai";
+import { after } from "next/server";
 import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
+import { runMemoryPipeline } from "@/lib/ai/memory-pipeline";
 import {
   homeChatOnboardingPrompt,
   homeChatRoutingPrompt,
@@ -78,11 +80,15 @@ export async function POST(request: Request) {
           values: z
             .array(z.string())
             .optional()
-            .describe("Things the user cares about (e.g. family, quality, growth)"),
+            .describe(
+              "Things the user cares about (e.g. family, quality, growth)"
+            ),
           rawContext: z
             .string()
             .optional()
-            .describe("Free-form summary of who the user is, what they do, their background"),
+            .describe(
+              "Free-form summary of who the user is, what they do, their background"
+            ),
         }),
         execute: async ({ name, values, rawContext }) => {
           await upsertUserModel({ userId, name, values, rawContext });
@@ -101,7 +107,9 @@ export async function POST(request: Request) {
           name: z
             .string()
             .max(100)
-            .describe("Short pursuit name, e.g. 'Distribution', 'Marketing', 'Personal Growth'"),
+            .describe(
+              "Short pursuit name, e.g. 'Distribution', 'Marketing', 'Personal Growth'"
+            ),
           vision: z
             .string()
             .optional()
@@ -112,7 +120,12 @@ export async function POST(request: Request) {
             .describe("Where things stand right now"),
         }),
         execute: async ({ name, vision, currentState }) => {
-          const pursuit = await createPursuit({ userId, name, vision, currentState });
+          const pursuit = await createPursuit({
+            userId,
+            name,
+            vision,
+            currentState,
+          });
           return { id: pursuit.id, name: pursuit.name };
         },
       }),
@@ -128,7 +141,9 @@ export async function POST(request: Request) {
           name: z
             .string()
             .max(100)
-            .describe("Short pursuit name, e.g. 'Personal Growth', 'Golf', 'D2C Brand'"),
+            .describe(
+              "Short pursuit name, e.g. 'Personal Growth', 'Golf', 'D2C Brand'"
+            ),
           vision: z
             .string()
             .optional()
@@ -139,7 +154,12 @@ export async function POST(request: Request) {
             .describe("Where things stand right now"),
         }),
         execute: async ({ name, vision, currentState }) => {
-          const pursuit = await createPursuit({ userId, name, vision, currentState });
+          const pursuit = await createPursuit({
+            userId,
+            name,
+            vision,
+            currentState,
+          });
           return { id: pursuit.id, name: pursuit.name };
         },
       }),
@@ -171,7 +191,11 @@ export async function POST(request: Request) {
           // Verify project belongs to this user
           const proj = await getProjectById({ id: projectId });
           if (!proj) return { error: "Project not found" };
-          const task = await createTask({ projectId, title, source: "ai_suggested" });
+          const task = await createTask({
+            projectId,
+            title,
+            source: "ai_suggested",
+          });
           return { id: task.id, title: task.title };
         },
       }),
@@ -179,7 +203,9 @@ export async function POST(request: Request) {
         description:
           "Create a new project under a pursuit. Use when the user's message describes an initiative that doesn't fit any existing project.",
         inputSchema: z.object({
-          pursuitId: z.string().describe("The pursuit ID to create the project under"),
+          pursuitId: z
+            .string()
+            .describe("The pursuit ID to create the project under"),
           name: z.string().max(200).describe("Short project name"),
           description: z.string().optional().describe("Brief description"),
         }),
@@ -210,6 +236,30 @@ export async function POST(request: Request) {
       generateId: generateUUID,
       onError: () => "Something went wrong. Please try again.",
     });
+
+    // In routing mode only: feed the user message into the memory pipeline
+    // after the response is sent — non-blocking, never affects the stream.
+    if (!hasNoPursuits) {
+      const lastMsg = messages.at(-1);
+      const rawInput =
+        lastMsg?.role === "user"
+          ? typeof lastMsg.content === "string"
+            ? lastMsg.content
+            : ((
+                lastMsg.content as Array<{ type: string; text?: string }>
+              )?.find((p) => p.type === "text")?.text ?? "")
+          : "";
+
+      if (rawInput) {
+        after(async () => {
+          await runMemoryPipeline({
+            userId,
+            rawInput,
+            pursuitNames: pursuits.map((p) => p.name),
+          });
+        });
+      }
+    }
 
     return createUIMessageStreamResponse({ stream });
   } catch (error) {

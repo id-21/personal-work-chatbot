@@ -20,7 +20,10 @@ export async function GET(
   const detail = await getPursuitWithDetail({ id });
 
   if (!detail) {
-    return new ChatSDKError("not_found:database", "Pursuit not found").toResponse();
+    return new ChatSDKError(
+      "not_found:database",
+      "Pursuit not found"
+    ).toResponse();
   }
 
   if (detail.userId !== session.user.id) {
@@ -41,12 +44,26 @@ export async function PUT(
 
   const { id } = await params;
   const body = await request.json();
-  const { name, vision, currentState, constraints, opportunities, displayOrder } = body;
+  const {
+    name,
+    vision,
+    currentState,
+    constraints,
+    opportunities,
+    displayOrder,
+  } = body;
 
   const updated = await updatePursuitById({
     id,
     userId: session.user.id,
-    updates: { name, vision, currentState, constraints, opportunities, displayOrder },
+    updates: {
+      name,
+      vision,
+      currentState,
+      constraints,
+      opportunities,
+      displayOrder,
+    },
   });
 
   return Response.json(updated);
@@ -65,7 +82,10 @@ export async function DELETE(
   const deleted = await deletePursuitById({ id, userId: session.user.id });
 
   if (!deleted) {
-    return new ChatSDKError("not_found:database", "Pursuit not found").toResponse();
+    return new ChatSDKError(
+      "not_found:database",
+      "Pursuit not found"
+    ).toResponse();
   }
 
   return Response.json({ deleted: true });

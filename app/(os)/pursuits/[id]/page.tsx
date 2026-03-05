@@ -1,17 +1,19 @@
-import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/app/(auth)/auth";
 import { CreateProjectDialog } from "@/components/os/create-project-dialog";
 import { ProjectCard } from "@/components/os/project-card";
 import { ScopedChat } from "@/components/os/scoped-chat";
-import { getPursuitWithDetail } from "@/lib/db/queries";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { getPursuitWithDetail } from "@/lib/db/queries";
 
 interface PursuitDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function PursuitDetailPage({ params }: PursuitDetailPageProps) {
+export default async function PursuitDetailPage({
+  params,
+}: PursuitDetailPageProps) {
   const session = await auth();
   if (!session?.user) redirect("/login");
 

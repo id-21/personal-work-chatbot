@@ -31,7 +31,10 @@ export async function POST(request: Request) {
     });
 
     if (summary === null) {
-      return Response.json({ summary: null, message: "No thoughts to summarise yet" });
+      return Response.json({
+        summary: null,
+        message: "No thoughts to summarise yet",
+      });
     }
 
     return Response.json({ summary });
@@ -40,6 +43,9 @@ export async function POST(request: Request) {
       return error.toResponse();
     }
     console.error("Summary generation error:", error);
-    return Response.json({ error: "Summary generation failed" }, { status: 500 });
+    return Response.json(
+      { error: "Summary generation failed" },
+      { status: 500 }
+    );
   }
 }

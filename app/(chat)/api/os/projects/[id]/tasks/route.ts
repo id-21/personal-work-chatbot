@@ -29,7 +29,10 @@ export async function GET(
   const projectData = await verifyProjectOwnership(projectId, session.user.id);
 
   if (!projectData) {
-    return new ChatSDKError("not_found:database", "Project not found").toResponse();
+    return new ChatSDKError(
+      "not_found:database",
+      "Project not found"
+    ).toResponse();
   }
 
   const tasks = await getTasksByProjectId({ projectId });
@@ -49,16 +52,28 @@ export async function POST(
   const projectData = await verifyProjectOwnership(projectId, session.user.id);
 
   if (!projectData) {
-    return new ChatSDKError("not_found:database", "Project not found").toResponse();
+    return new ChatSDKError(
+      "not_found:database",
+      "Project not found"
+    ).toResponse();
   }
 
   const body = await request.json();
   const { title, detail, status, source } = body;
 
   if (!title || typeof title !== "string") {
-    return new ChatSDKError("bad_request:api", "title is required").toResponse();
+    return new ChatSDKError(
+      "bad_request:api",
+      "title is required"
+    ).toResponse();
   }
 
-  const created = await createTask({ projectId, title, detail, status, source });
+  const created = await createTask({
+    projectId,
+    title,
+    detail,
+    status,
+    source,
+  });
   return Response.json(created, { status: 201 });
 }

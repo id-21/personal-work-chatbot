@@ -7,9 +7,9 @@ import {
 } from "ai";
 import { after } from "next/server";
 import { auth } from "@/app/(auth)/auth";
-import { maybRegenerateSummary } from "@/lib/ai/summary";
 import { type PursuitContext, scopedPrompt } from "@/lib/ai/prompts";
 import { getOSModel } from "@/lib/ai/providers";
+import { maybRegenerateSummary } from "@/lib/ai/summary";
 import { createOSTools } from "@/lib/ai/tools/os/create-os-tools";
 import { getPursuitWithDetail } from "@/lib/db/queries";
 import { ChatSDKError } from "@/lib/errors";

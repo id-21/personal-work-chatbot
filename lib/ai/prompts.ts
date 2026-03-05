@@ -57,7 +57,10 @@ export function scopedPrompt(pursuit: PursuitContext): string {
   const projectLines = pursuit.projects
     .map((p) => {
       const taskLines = p.tasks
-        .map((t) => `    - [${t.id}] ${t.title} (${t.status}${t.source === "ai_suggested" ? ", AI" : ""})`)
+        .map(
+          (t) =>
+            `    - [${t.id}] ${t.title} (${t.status}${t.source === "ai_suggested" ? ", AI" : ""})`
+        )
         .join("\n");
       return `  • ${p.name} [${p.id}] — ${p.status} — ${p.openTaskCount} open\n${taskLines}`;
     })

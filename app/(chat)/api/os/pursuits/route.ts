@@ -20,7 +20,14 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { name, vision, currentState, constraints, opportunities, displayOrder } = body;
+  const {
+    name,
+    vision,
+    currentState,
+    constraints,
+    opportunities,
+    displayOrder,
+  } = body;
 
   if (!name || typeof name !== "string") {
     return new ChatSDKError("bad_request:api", "name is required").toResponse();

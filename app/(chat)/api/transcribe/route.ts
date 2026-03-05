@@ -1,5 +1,5 @@
-import { auth } from "@/app/(auth)/auth";
 import { NextResponse } from "next/server";
+import { auth } from "@/app/(auth)/auth";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -44,7 +44,10 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const error = await response.text();
       console.error("[transcribe] OpenAI error:", error);
-      return NextResponse.json({ error: "Transcription failed" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Transcription failed" },
+        { status: 500 }
+      );
     }
 
     const text = await response.text();

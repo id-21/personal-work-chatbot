@@ -10,8 +10,8 @@ import {
   gte,
   inArray,
   lt,
-  sql,
   type SQL,
+  sql,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -21,32 +21,32 @@ import { ChatSDKError } from "../errors";
 import { generateUUID } from "../utils";
 import {
   type Chat,
-  chat,
   type ContextSummary,
+  chat,
   contextSummary,
   type DBMessage,
   document,
-  memoryChunk,
   type MemoryChunk,
+  memoryChunk,
   message,
-  narrative,
   type Narrative,
+  narrative,
   type Project,
-  project,
   type Pursuit,
-  pursuit,
   type PursuitThought,
+  project,
+  pursuit,
   pursuitThought,
-  routingLog,
   type RoutingLog,
+  routingLog,
+  type Suggestion,
   stream,
   suggestion,
-  type Suggestion,
-  task,
   type Task,
+  task,
   type User,
-  user,
   type UserModel,
+  user,
   userModel,
   vote,
 } from "./schema";
@@ -752,10 +752,7 @@ export async function getPursuitById({
   id: string;
 }): Promise<Pursuit | null> {
   try {
-    const [result] = await db
-      .select()
-      .from(pursuit)
-      .where(eq(pursuit.id, id));
+    const [result] = await db.select().from(pursuit).where(eq(pursuit.id, id));
     return result ?? null;
   } catch (_error) {
     throw new ChatSDKError("bad_request:database", "Failed to get pursuit");
@@ -819,9 +816,7 @@ export async function deletePursuitById({
       await db.delete(project).where(inArray(project.id, projectIds));
     }
 
-    await db
-      .delete(pursuitThought)
-      .where(eq(pursuitThought.pursuitId, id));
+    await db.delete(pursuitThought).where(eq(pursuitThought.pursuitId, id));
     await db
       .delete(contextSummary)
       .where(
@@ -892,10 +887,7 @@ export async function getProjectById({
   id: string;
 }): Promise<Project | null> {
   try {
-    const [result] = await db
-      .select()
-      .from(project)
-      .where(eq(project.id, id));
+    const [result] = await db.select().from(project).where(eq(project.id, id));
     return result ?? null;
   } catch (_error) {
     throw new ChatSDKError("bad_request:database", "Failed to get project");
@@ -1311,7 +1303,10 @@ export async function vectorSearch({
       similarity: number;
     }>;
   } catch (_error) {
-    throw new ChatSDKError("bad_request:database", "Failed to run vector search");
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to run vector search"
+    );
   }
 }
 
@@ -1398,6 +1393,9 @@ export async function upsertNarrative({
       .returning();
     return created;
   } catch (_error) {
-    throw new ChatSDKError("bad_request:database", "Failed to upsert narrative");
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to upsert narrative"
+    );
   }
 }

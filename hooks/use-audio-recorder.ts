@@ -76,11 +76,10 @@ export function useAudioRecorder(onTranscript: (text: string) => void) {
       setRecordingState("recording");
     } catch (error) {
       stopStream();
-      if (
-        error instanceof DOMException &&
-        error.name === "NotAllowedError"
-      ) {
-        toast.error("Microphone access denied. Please allow microphone access and try again.");
+      if (error instanceof DOMException && error.name === "NotAllowedError") {
+        toast.error(
+          "Microphone access denied. Please allow microphone access and try again."
+        );
       } else {
         toast.error("Could not start recording, please try again");
       }

@@ -5,7 +5,6 @@ import {
   createPursuitThought,
   createTask,
   getProjectById,
-  getProjectsByPursuitId,
   getPursuitWithDetail,
   getTasksByProjectId,
   updatePursuitById,
@@ -109,7 +108,10 @@ export function createOSTools({
         detail: z.string().optional().describe("Updated detail text"),
       }),
       execute: async ({ taskId, status, detail }) => {
-        const updated = await updateTaskById({ id: taskId, updates: { status, detail } });
+        const updated = await updateTaskById({
+          id: taskId,
+          updates: { status, detail },
+        });
         return { id: updated.id, status: updated.status };
       },
     }),

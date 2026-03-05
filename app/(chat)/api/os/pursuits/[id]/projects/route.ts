@@ -2,8 +2,8 @@ import type { NextRequest } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import {
   createProject,
-  getPursuitById,
   getProjectsByPursuitId,
+  getPursuitById,
 } from "@/lib/db/queries";
 import { ChatSDKError } from "@/lib/errors";
 
@@ -20,7 +20,10 @@ export async function GET(
   const pursuitData = await getPursuitById({ id: pursuitId });
 
   if (!pursuitData) {
-    return new ChatSDKError("not_found:database", "Pursuit not found").toResponse();
+    return new ChatSDKError(
+      "not_found:database",
+      "Pursuit not found"
+    ).toResponse();
   }
 
   if (pursuitData.userId !== session.user.id) {
@@ -44,7 +47,10 @@ export async function POST(
   const pursuitData = await getPursuitById({ id: pursuitId });
 
   if (!pursuitData) {
-    return new ChatSDKError("not_found:database", "Pursuit not found").toResponse();
+    return new ChatSDKError(
+      "not_found:database",
+      "Pursuit not found"
+    ).toResponse();
   }
 
   if (pursuitData.userId !== session.user.id) {
