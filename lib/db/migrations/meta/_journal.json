@@ -85,6 +85,13 @@
       "when": 1772727720000,
       "tag": "0011_vector_search",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1772727730000,
+      "tag": "0012_fix_vector_search",
+      "breakpoints": true
     }
   ]
 }

@@ -1295,7 +1295,8 @@ export async function vectorSearch({
         ${filterPursuits ?? null}::text[]
       )`
     );
-    return result.rows as Array<{
+    // postgres.js driver returns rows directly (not result.rows)
+    return result as unknown as Array<{
       id: string;
       text: string;
       tags: string[];
@@ -1396,6 +1397,25 @@ export async function upsertNarrative({
     throw new ChatSDKError(
       "bad_request:database",
       "Failed to upsert narrative"
+    );
+  }
+}
+
+export async function getNarrativesByUserId({
+  userId,
+}: {
+  userId: string;
+}): Promise<Narrative[]> {
+  try {
+    return await db
+      .select()
+      .from(narrative)
+      .where(eq(narrative.userId, userId))
+      .orderBy(desc(narrative.lastUpdated));
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get narratives by user id"
     );
   }
 }

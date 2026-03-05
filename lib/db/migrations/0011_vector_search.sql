@@ -11,14 +11,14 @@ BEGIN
   SELECT
     mc.id,
     mc.text,
-    mc.tags::text[],
+    ARRAY(SELECT json_array_elements_text(mc.tags)) AS tags,
     mc.importance::float,
     1 - (mc.embedding <=> query_embedding) AS similarity
   FROM memory_chunks mc
   WHERE
     mc."userId" = p_user_id
     AND mc."supersededBy" IS NULL
-    AND (filter_pursuits IS NULL OR mc."linkedPursuits"::text[] && filter_pursuits)
+    AND (filter_pursuits IS NULL OR ARRAY(SELECT json_array_elements_text(mc."linkedPursuits")) && filter_pursuits)
   ORDER BY mc.embedding <=> query_embedding
   LIMIT match_count;
 END; $$;
