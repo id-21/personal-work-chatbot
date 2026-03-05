@@ -92,6 +92,13 @@
       "when": 1772727730000,
       "tag": "0012_fix_vector_search",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1772730736452,
+      "tag": "0013_lively_colossus",
+      "breakpoints": true
     }
   ]
 }

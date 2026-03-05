@@ -19,15 +19,36 @@ import {
   createProject,
   createPursuit,
   createTask,
+  getMessagesByChatId,
+  getOrCreateHomeChat,
   getProjectById,
   getPursuitsWithProjects,
   getUserModelByUserId,
+  saveMessages,
   upsertUserModel,
 } from "@/lib/db/queries";
 import { ChatSDKError } from "@/lib/errors";
-import { generateUUID } from "@/lib/utils";
+import { convertToUIMessages, generateUUID } from "@/lib/utils";
 
 export const maxDuration = 60;
+
+export async function GET() {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return new ChatSDKError("unauthorized:chat").toResponse();
+    }
+    const userModel = await getUserModelByUserId({ userId: session.user.id });
+    if (!userModel?.homeChatId) {
+      return Response.json({ messages: [] });
+    }
+    const msgs = await getMessagesByChatId({ id: userModel.homeChatId });
+    return Response.json({ messages: convertToUIMessages(msgs) });
+  } catch (error) {
+    console.error("Home chat GET error:", error);
+    return Response.json({ messages: [] });
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -218,6 +239,42 @@ export async function POST(request: Request) {
 
     const activeTools = hasNoPursuits ? onboardingTools : routingTools;
 
+    // Resolve (or lazily create) the user's persistent home chat
+    const chatId = await getOrCreateHomeChat({
+      userId,
+      existingHomeChatId: userModel?.homeChatId,
+    });
+
+    // Extract the last user message for persistence + memory pipeline
+    const lastUserMsg = messages.at(-1);
+    const userMsgId = lastUserMsg?.id ?? generateUUID();
+    const rawInput =
+      lastUserMsg?.role === "user"
+        ? typeof lastUserMsg.content === "string"
+          ? lastUserMsg.content
+          : ((
+              lastUserMsg.content as Array<{ type: string; text?: string }>
+            )?.find((p) => p.type === "text")?.text ?? "")
+        : "";
+
+    // Save the user message before streaming so it's recorded even if the AI fails
+    if (lastUserMsg?.role === "user" && rawInput) {
+      await saveMessages({
+        messages: [
+          {
+            id: userMsgId,
+            chatId,
+            role: "user",
+            parts: (lastUserMsg.parts as []) ?? [
+              { type: "text", text: rawInput },
+            ],
+            attachments: [],
+            createdAt: new Date(),
+          },
+        ],
+      });
+    }
+
     const modelMessages = await convertToModelMessages(messages);
 
     const stream = createUIMessageStream({
@@ -234,31 +291,35 @@ export async function POST(request: Request) {
         dataStream.merge(result.toUIMessageStream());
       },
       generateId: generateUUID,
+      onFinish: async ({ messages: finishedMessages }) => {
+        const aiMessages = finishedMessages.filter((m) => m.role !== "user");
+        if (aiMessages.length > 0) {
+          await saveMessages({
+            messages: aiMessages.map((m) => ({
+              id: m.id,
+              chatId,
+              role: m.role,
+              parts: m.parts as [],
+              attachments: [],
+              createdAt: new Date(),
+            })),
+          });
+        }
+      },
       onError: () => "Something went wrong. Please try again.",
     });
 
     // In routing mode only: feed the user message into the memory pipeline
     // after the response is sent — non-blocking, never affects the stream.
-    if (!hasNoPursuits) {
-      const lastMsg = messages.at(-1);
-      const rawInput =
-        lastMsg?.role === "user"
-          ? typeof lastMsg.content === "string"
-            ? lastMsg.content
-            : ((
-                lastMsg.content as Array<{ type: string; text?: string }>
-              )?.find((p) => p.type === "text")?.text ?? "")
-          : "";
-
-      if (rawInput) {
-        after(async () => {
-          await runMemoryPipeline({
-            userId,
-            rawInput,
-            pursuitNames: pursuits.map((p) => p.name),
-          });
+    if (!hasNoPursuits && rawInput) {
+      after(async () => {
+        await runMemoryPipeline({
+          userId,
+          rawInput,
+          pursuitNames: pursuits.map((p) => p.name),
+          sourceMessageId: userMsgId,
         });
-      }
+      });
     }
 
     return createUIMessageStreamResponse({ stream });

@@ -1235,6 +1235,7 @@ export async function createMemoryChunk({
   entityType,
   linkedPursuits = [],
   importance = 0.5,
+  sourceMessageId,
 }: {
   userId: string;
   text: string;
@@ -1243,6 +1244,7 @@ export async function createMemoryChunk({
   entityType?: MemoryChunk["entityType"];
   linkedPursuits?: string[];
   importance?: number;
+  sourceMessageId?: string;
 }): Promise<MemoryChunk> {
   try {
     const [created] = await db
@@ -1255,6 +1257,7 @@ export async function createMemoryChunk({
         entityType: entityType ?? null,
         linkedPursuits,
         importance,
+        sourceMessageId: sourceMessageId ?? null,
       })
       .returning();
     return created;
@@ -1418,4 +1421,34 @@ export async function getNarrativesByUserId({
       "Failed to get narratives by user id"
     );
   }
+}
+
+// ─── Home Chat ────────────────────────────────────────────────────────────────
+
+export async function setHomeChatId({
+  userId,
+  chatId,
+}: {
+  userId: string;
+  chatId: string;
+}): Promise<void> {
+  await db
+    .update(userModel)
+    .set({ homeChatId: chatId })
+    .where(eq(userModel.userId, userId));
+}
+
+export async function getOrCreateHomeChat({
+  userId,
+  existingHomeChatId,
+}: {
+  userId: string;
+  existingHomeChatId: string | null | undefined;
+}): Promise<string> {
+  if (existingHomeChatId) return existingHomeChatId;
+
+  const chatId = generateUUID();
+  await saveChat({ id: chatId, userId, title: "Home", visibility: "private" });
+  await setHomeChatId({ userId, chatId });
+  return chatId;
 }

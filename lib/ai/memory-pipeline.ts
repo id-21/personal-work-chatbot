@@ -27,10 +27,12 @@ export async function runMemoryPipeline({
   userId,
   rawInput,
   pursuitNames,
+  sourceMessageId,
 }: {
   userId: string;
   rawInput: string;
   pursuitNames: string[];
+  sourceMessageId?: string;
 }): Promise<void> {
   try {
     // Step 1: Classify intent + embed in parallel
@@ -45,13 +47,14 @@ export async function runMemoryPipeline({
 
     const { pursuitsAffected } = routerResult.object;
 
-    // Step 2: Write vector chunk
+    // Step 2: Write vector chunk (linked to source message for traceability)
     await createMemoryChunk({
       userId,
       text: rawInput,
       embedding,
       linkedPursuits: pursuitsAffected,
       importance: 0.5,
+      sourceMessageId,
     });
 
     // Step 3: Update narratives for each affected pursuit in parallel

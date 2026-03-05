@@ -64,6 +64,16 @@ export function HomeChatView({ pursuits, userName }: HomeChatViewProps) {
     },
   });
 
+  // Hydrate conversation history from DB on first mount
+  useEffect(() => {
+    fetch("/api/os/home-chat")
+      .then((r) => r.json())
+      .then(({ messages: saved }) => {
+        if (saved?.length > 0) setMessages(saved);
+      })
+      .catch(() => {}); // non-critical
+  }, []);
+
   const isLoading = status === "streaming" || status === "submitted";
   const hasSentMessage = messages.length > 0;
 

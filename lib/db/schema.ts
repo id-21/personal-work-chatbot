@@ -187,6 +187,7 @@ export const userModel = pgTable("user_model", {
     .notNull()
     .default({}),
   rawContext: text("rawContext"),
+  homeChatId: uuid("homeChatId"),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
@@ -293,6 +294,7 @@ export const memoryChunk = pgTable("memory_chunks", {
     .default([]),
   importance: real("importance").notNull().default(0.5),
   supersededBy: uuid("supersededBy"),
+  sourceMessageId: uuid("sourceMessageId"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
