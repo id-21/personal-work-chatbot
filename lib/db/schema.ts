@@ -6,11 +6,13 @@ import {
   json,
   pgTable,
   primaryKey,
+  real,
   text,
   timestamp,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { vector } from "drizzle-orm/pg-core";
 
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -219,6 +221,7 @@ export const project = pgTable("projects", {
   })
     .notNull()
     .default("active"),
+  narrativeId: uuid("narrativeId"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
@@ -240,6 +243,7 @@ export const task = pgTable("tasks", {
   source: varchar("source", { enum: ["user", "ai_suggested"] })
     .notNull()
     .default("user"),
+  contextChunkIds: json("contextChunkIds").$type<string[]>().notNull().default([]),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
@@ -268,6 +272,42 @@ export const contextSummary = pgTable("context_summaries", {
 });
 
 export type ContextSummary = InferSelectModel<typeof contextSummary>;
+
+export const memoryChunk = pgTable("memory_chunks", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  text: text("text").notNull(),
+  embedding: vector("embedding", { dimensions: 1536 }),
+  tags: json("tags").$type<string[]>().notNull().default([]),
+  entityType: varchar("entityType", {
+    enum: ["business", "person", "challenge", "insight", "preference"],
+  }),
+  linkedPursuits: json("linkedPursuits").$type<string[]>().notNull().default([]),
+  importance: real("importance").notNull().default(0.5),
+  supersededBy: uuid("supersededBy"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type MemoryChunk = InferSelectModel<typeof memoryChunk>;
+
+export const narrative = pgTable("narratives", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  topic: text("topic").notNull(),
+  topicType: varchar("topicType", {
+    enum: ["business", "pursuit", "person", "domain"],
+  }).notNull(),
+  content: text("content").notNull().default(""),
+  summary: text("summary"),
+  version: integer("version").notNull().default(1),
+  lastUpdated: timestamp("lastUpdated").notNull().defaultNow(),
+});
+
+export type Narrative = InferSelectModel<typeof narrative>;
 
 export const routingLog = pgTable("routing_log", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),

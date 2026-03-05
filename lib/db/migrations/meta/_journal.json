@@ -71,6 +71,20 @@
       "when": 1772390507880,
       "tag": "0009_aspiring_toxin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1772727719975,
+      "tag": "0010_wooden_shadowcat",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1772727720000,
+      "tag": "0011_vector_search",
+      "breakpoints": true
     }
   ]
 }
