@@ -3,7 +3,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, Loader2Icon, MicIcon } from "lucide-react";
 import {
   type ChangeEvent,
   type Dispatch,
@@ -44,6 +44,7 @@ import {
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
 import { SuggestedActions } from "./suggested-actions";
+import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import { Button } from "./ui/button";
 import type { VisibilityType } from "./visibility-selector";
 
@@ -143,6 +144,10 @@ function PureMultimodalInput({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
+
+  const { recordingState, startRecording, stopRecording } = useAudioRecorder(
+    (transcript) => setInput((prev) => (prev ? `${prev} ${transcript}` : transcript)),
+  );
 
   const submitForm = useCallback(() => {
     window.history.pushState({}, "", `/chat/${chatId}`);
@@ -390,18 +395,38 @@ function PureMultimodalInput({
             />
           </PromptInputTools>
 
-          {status === "submitted" ? (
-            <StopButton setMessages={setMessages} stop={stop} />
-          ) : (
+          <div className="flex items-center gap-1">
+            <Button
+              className="size-8 rounded-full"
+              disabled={status === "submitted" || recordingState === "transcribing"}
+              onClick={recordingState === "recording" ? stopRecording : startRecording}
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
+              {recordingState === "transcribing" ? (
+                <Loader2Icon className="animate-spin" size={16} />
+              ) : recordingState === "recording" ? (
+                <span className="flex size-4 items-center justify-center rounded-full bg-destructive">
+                  <span className="size-[7px] rounded-[1px] bg-white" />
+                </span>
+              ) : (
+                <MicIcon size={16} />
+              )}
+            </Button>
+            {status === "submitted" ? (
+              <StopButton setMessages={setMessages} stop={stop} />
+            ) : (
             <PromptInputSubmit
               className="size-8 rounded-full bg-primary text-primary-foreground transition-colors duration-200 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
               data-testid="send-button"
-              disabled={!input.trim() || uploadQueue.length > 0}
+              disabled={!input.trim() || uploadQueue.length > 0 || recordingState !== "idle"}
               status={status}
             >
               <ArrowUpIcon size={14} />
             </PromptInputSubmit>
-          )}
+            )}
+          </div>
         </PromptInputToolbar>
       </PromptInput>
     </div>
