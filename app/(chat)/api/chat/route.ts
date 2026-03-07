@@ -33,6 +33,7 @@ import type { DBMessage } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
+import { updateKnowledgeBase } from "@/lib/ai/agents/knowledge-agent";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
@@ -215,6 +216,19 @@ export async function POST(request: Request) {
               chatId: id,
             })),
           });
+
+          // Trigger knowledge agent every 5 messages (5, 10, 15, ...)
+          // messagesFromDb = messages before this turn; +1 for user + assistant turn(s)
+          const estimatedTotal =
+            messagesFromDb.length + 1 + finishedMessages.length;
+          if (estimatedTotal >= 5 && estimatedTotal % 5 === 0) {
+            after(async () => {
+              await updateKnowledgeBase({
+                chatId: id,
+                userId: session.user.id,
+              });
+            });
+          }
         }
       },
       onError: () => "Oops, an error occurred!",

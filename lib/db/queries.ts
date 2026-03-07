@@ -583,6 +583,23 @@ export async function createStreamId({
   }
 }
 
+export async function getKnowledgeBaseDocument({ userId }: { userId: string }) {
+  try {
+    const [doc] = await db
+      .select()
+      .from(document)
+      .where(and(eq(document.userId, userId), eq(document.title, "__kb__")))
+      .orderBy(desc(document.createdAt))
+      .limit(1);
+    return doc ?? null;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get knowledge base document"
+    );
+  }
+}
+
 export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
   try {
     const streamIds = await db
