@@ -276,6 +276,37 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PATCH(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return new ChatSDKError("bad_request:api").toResponse();
+  }
+
+  const session = await auth();
+
+  if (!session?.user) {
+    return new ChatSDKError("unauthorized:chat").toResponse();
+  }
+
+  const chat = await getChatById({ id });
+
+  if (chat?.userId !== session.user.id) {
+    return new ChatSDKError("forbidden:chat").toResponse();
+  }
+
+  const { title } = await request.json();
+
+  if (!title || typeof title !== "string" || title.trim().length === 0) {
+    return new ChatSDKError("bad_request:api").toResponse();
+  }
+
+  await updateChatTitleById({ chatId: id, title: title.trim() });
+
+  return Response.json({ id, title: title.trim() }, { status: 200 });
+}
+
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
