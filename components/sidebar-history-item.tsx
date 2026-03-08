@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useState } from "react";
 import { toast } from "sonner";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
 import type { Chat } from "@/lib/db/schema";
 import {
   CheckCircleFillIcon,
   GlobeIcon,
+  LoaderIcon,
   LockIcon,
   MoreHorizontalIcon,
   PencilEditIcon,
@@ -47,15 +48,8 @@ const PureChatItem = ({
   });
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [draftTitle, setDraftTitle] = useState(chat.title);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isEditing) {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }
-  }, [isEditing]);
 
   const commitRename = async () => {
     const trimmed = draftTitle.trim();
@@ -65,6 +59,7 @@ const PureChatItem = ({
       return;
     }
 
+    setIsSaving(true);
     try {
       const res = await fetch(`/api/chat?id=${chat.id}`, {
         method: "PATCH",
@@ -77,6 +72,7 @@ const PureChatItem = ({
       toast.error("Failed to rename chat");
       setDraftTitle(chat.title);
     } finally {
+      setIsSaving(false);
       setIsEditing(false);
     }
   };
@@ -84,31 +80,36 @@ const PureChatItem = ({
   return (
     <SidebarMenuItem>
       {isEditing ? (
-        <div
-          className="flex h-8 w-full items-center rounded-md px-2 text-sm data-[active=true]:bg-sidebar-accent"
-          data-active={isActive}
-        >
-          <input
-            ref={inputRef}
-            className="w-full min-w-0 bg-transparent outline-none"
-            value={draftTitle}
-            onChange={(e) => setDraftTitle(e.target.value)}
-            onBlur={(e) => {
-              if (!e.currentTarget.parentElement?.contains(e.relatedTarget)) {
-                commitRename();
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                commitRename();
-              } else if (e.key === "Escape") {
-                setDraftTitle(chat.title);
-                setIsEditing(false);
-              }
-            }}
-          />
-        </div>
+        isSaving ? (
+          <div className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground">
+            <span className="flex-1 truncate">{draftTitle}</span>
+            <LoaderIcon className="animate-spin shrink-0" size={12} />
+          </div>
+        ) : (
+          <div className="flex h-8 w-full items-center rounded-md px-2 text-sm ring-1 ring-ring">
+            <input
+              autoFocus
+              className="w-full min-w-0 bg-transparent outline-none"
+              value={draftTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onFocus={(e) => e.currentTarget.select()}
+              onBlur={(e) => {
+                if (!e.currentTarget.parentElement?.contains(e.relatedTarget)) {
+                  commitRename();
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitRename();
+                } else if (e.key === "Escape") {
+                  setDraftTitle(chat.title);
+                  setIsEditing(false);
+                }
+              }}
+            />
+          </div>
+        )
       ) : (
         <SidebarMenuButton asChild isActive={isActive}>
           <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
