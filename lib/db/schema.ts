@@ -1,10 +1,13 @@
 import type { InferSelectModel } from "drizzle-orm";
 import {
   boolean,
+  customType,
   foreignKey,
+  integer,
   json,
   pgTable,
   primaryKey,
+  real,
   text,
   timestamp,
   uuid,
@@ -168,3 +171,103 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+// ─── Memory System ────────────────────────────────────────────────────────────
+
+// pgvector customType (drizzle-orm 0.34 doesn't ship vector() natively)
+const vectorColumn = customType<{
+  data: number[];
+  driverData: string;
+  config: { dimensions: number };
+}>({
+  dataType(config) {
+    return `vector(${config?.dimensions ?? 768})`;
+  },
+  toDriver(value) {
+    return JSON.stringify(value);
+  },
+  fromDriver(value) {
+    return JSON.parse(value as string) as number[];
+  },
+});
+
+export interface ProposedFact {
+  id: string;
+  text: string;
+  topic: string;
+  confidence: number;
+  sourceQuote: string;
+  sourceMessageIds: string[];
+}
+
+export interface ProposedPursuit {
+  id: string;
+  title: string;
+  rationale: string;
+  urgency: "low" | "medium" | "high";
+  sourceMessageIds: string[];
+}
+
+export const memoryChunk = pgTable("MemoryChunk", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  chatId: uuid("chatId").references(() => chat.id),
+  sourceMessageIds: json("sourceMessageIds").$type<string[]>().notNull().default([]),
+  text: text("text").notNull(),
+  embedding: vectorColumn("embedding", { dimensions: 768 }).notNull(),
+  tags: json("tags").$type<string[]>().notNull().default([]),
+  importance: real("importance").notNull().default(0.5),
+  supersededBy: uuid("supersededBy"), // points to the chunk that replaced this one
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type MemoryChunk = InferSelectModel<typeof memoryChunk>;
+
+export const narrative = pgTable("Narrative", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  topic: text("topic").notNull(),
+  content: text("content").notNull().default(""),
+  summary: text("summary"),
+  version: integer("version").notNull().default(1),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type Narrative = InferSelectModel<typeof narrative>;
+
+export const reflection = pgTable("Reflection", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  chatId: uuid("chatId")
+    .notNull()
+    .references(() => chat.id),
+  status: varchar("status", { enum: ["pending", "confirmed", "dismissed"] })
+    .notNull()
+    .default("pending"),
+  proposedFacts: json("proposedFacts").$type<ProposedFact[]>().notNull().default([]),
+  proposedPursuits: json("proposedPursuits").$type<ProposedPursuit[]>().notNull().default([]),
+  casualTopics: json("casualTopics").$type<string[]>().notNull().default([]),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type Reflection = InferSelectModel<typeof reflection>;
+
+export const reflectionFeedback = pgTable("ReflectionFeedback", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  reflectionId: uuid("reflectionId")
+    .notNull()
+    .references(() => reflection.id),
+  itemId: text("itemId").notNull(),
+  itemType: varchar("itemType", { enum: ["fact", "pursuit"] }).notNull(),
+  action: varchar("action", { enum: ["accept", "reject", "edit"] }).notNull(),
+  editedText: text("editedText"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type ReflectionFeedback = InferSelectModel<typeof reflectionFeedback>;

@@ -34,6 +34,7 @@ import { ChatSDKError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
 import { updateKnowledgeBase } from "@/lib/ai/agents/knowledge-agent";
+import { assembleContext } from "@/lib/memory/context-assembly";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
@@ -137,12 +138,36 @@ export async function POST(request: Request) {
 
     const modelMessages = await convertToModelMessages(uiMessages);
 
+    // Assemble long-term memory context (no-op when MEMORY_ENABLED is unset)
+    let memoryContext = "";
+    if (process.env.MEMORY_ENABLED && message?.role === "user") {
+      const latestText = (message.parts as Array<{ type: string; text?: string }>)
+        .filter((p) => p.type === "text")
+        .map((p) => p.text)
+        .join(" ")
+        .trim();
+      if (latestText) {
+        try {
+          memoryContext = await assembleContext({
+            userId: session.user.id,
+            userMessage: latestText,
+          });
+        } catch {
+          // Non-fatal: proceed without memory context
+        }
+      }
+    }
+
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
+        const baseSystemPrompt = systemPrompt({ selectedChatModel, requestHints });
+        const fullSystemPrompt = memoryContext
+          ? `${baseSystemPrompt}\n\n---\n\n${memoryContext}`
+          : baseSystemPrompt;
         const result = streamText({
           model: getLanguageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel, requestHints }),
+          system: fullSystemPrompt,
           messages: modelMessages,
           stopWhen: stepCountIs(5),
           experimental_activeTools: isReasoningModel

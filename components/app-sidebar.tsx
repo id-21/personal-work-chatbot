@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useSWRConfig } from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
-import { BookIcon } from "lucide-react";
+import { BookIcon, BrainIcon } from "lucide-react";
+import { fetcher } from "@/lib/utils";
 import { PlusIcon, TrashIcon } from "@/components/icons";
 import {
   getChatHistoryPaginationKey,
@@ -40,6 +41,13 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+
+  const { data: reflectionData } = useSWR<{ count: number }>(
+    user ? "/api/reflections/pending-count" : null,
+    fetcher,
+    { refreshInterval: 60_000 }
+  );
+  const pendingCount = reflectionData?.count ?? 0;
 
   const handleDeleteAll = () => {
     const deletePromise = fetch("/api/history", {
@@ -111,6 +119,30 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   </TooltipTrigger>
                   <TooltipContent align="end" className="hidden md:block">
                     Knowledge Base
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      className="relative h-8 p-1 md:h-fit md:p-2"
+                      variant="ghost"
+                      asChild
+                    >
+                      <Link
+                        href="/reflections"
+                        onClick={() => setOpenMobile(false)}
+                      >
+                        <BrainIcon size={16} />
+                        {pendingCount > 0 && (
+                          <span className="absolute -top-1 -right-1 size-4 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
+                            {pendingCount > 9 ? "9+" : pendingCount}
+                          </span>
+                        )}
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent align="end" className="hidden md:block">
+                    Memory Reflections{pendingCount > 0 ? ` (${pendingCount} pending)` : ""}
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
