@@ -99,12 +99,18 @@ export async function runReflectionAgent({
   chatId: string;
   userId: string;
 }): Promise<void> {
+  console.log("[reflection-agent] starting for chat:", chatId);
   try {
     const messages = await getMessagesByChatId({ id: chatId });
     const transcript = buildTranscriptWithIds(messages);
 
     // Skip trivially short chats
-    if (!transcript || transcript.length < 150) return;
+    if (!transcript || transcript.length < 150) {
+      console.log("[reflection-agent] transcript too short — skipping (length:", transcript.length, ")");
+      return;
+    }
+
+    console.log("[reflection-agent] transcript length:", transcript.length, "chars,", messages.length, "messages");
 
     const { text } = await generateText({
       model: getOSModel(),
@@ -122,6 +128,15 @@ export async function runReflectionAgent({
       return;
     }
 
+    console.log(
+      "[reflection-agent] extracted — facts:",
+      parsed.facts.length,
+      "pursuits:",
+      parsed.pursuits.length,
+      "casual:",
+      parsed.casual.length
+    );
+
     // Ensure all items have IDs
     const proposedFacts: ProposedFact[] = parsed.facts.map((f) => ({
       ...f,
@@ -132,15 +147,20 @@ export async function runReflectionAgent({
       id: p.id || generateItemId(),
     }));
 
-    if (!proposedFacts.length && !proposedPursuits.length) return;
+    if (!proposedFacts.length && !proposedPursuits.length) {
+      console.log("[reflection-agent] nothing worth storing — skipping");
+      return;
+    }
 
-    await createReflection({
+    const result = await createReflection({
       userId,
       chatId,
       proposedFacts,
       proposedPursuits,
       casualTopics: parsed.casual,
     });
+
+    console.log("[reflection-agent] created reflection id:", result.id);
   } catch (err) {
     console.error("[reflection-agent] Unexpected error:", err);
   }

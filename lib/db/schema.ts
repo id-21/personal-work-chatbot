@@ -271,3 +271,18 @@ export const reflectionFeedback = pgTable("ReflectionFeedback", {
 });
 
 export type ReflectionFeedback = InferSelectModel<typeof reflectionFeedback>;
+
+export const memoryIngestionLog = pgTable("MemoryIngestionLog", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  chatId: uuid("chatId")
+    .notNull()
+    .references(() => chat.id),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  agentType: varchar("agentType", { enum: ["reflection", "knowledge"] }).notNull(),
+  processedMessageIds: json("processedMessageIds").$type<string[]>().notNull().default([]),
+  ingestedAt: timestamp("ingestedAt").notNull().defaultNow(),
+});
+
+export type MemoryIngestionLog = InferSelectModel<typeof memoryIngestionLog>;

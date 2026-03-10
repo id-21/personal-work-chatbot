@@ -617,3 +617,17 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
     );
   }
 }
+
+// ─── Script-only helpers (not for use in request handlers) ───────────────────
+
+export async function getAllChatsByUserId({
+  userId,
+}: {
+  userId: string;
+}): Promise<Chat[]> {
+  return db.select().from(chat).where(eq(chat.userId, userId)).orderBy(asc(chat.createdAt));
+}
+
+export async function getAllUsers(): Promise<Array<{ id: string; email: string }>> {
+  return db.select({ id: user.id, email: user.email }).from(user);
+}

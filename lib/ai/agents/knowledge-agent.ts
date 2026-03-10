@@ -68,27 +68,45 @@ export async function updateKnowledgeBase({
   chatId: string;
   userId: string;
 }): Promise<void> {
-  const [messages, existingDoc] = await Promise.all([
-    getMessagesByChatId({ id: chatId }),
-    getKnowledgeBaseDocument({ userId }),
-  ]);
+  console.log("[knowledge-agent] starting for chat:", chatId);
+  try {
+    const [messages, existingDoc] = await Promise.all([
+      getMessagesByChatId({ id: chatId }),
+      getKnowledgeBaseDocument({ userId }),
+    ]);
 
-  const transcript = buildTranscript(messages);
-  if (!transcript) return;
+    const transcript = buildTranscript(messages);
+    if (!transcript) {
+      console.log("[knowledge-agent] no transcript — skipping");
+      return;
+    }
 
-  const existingContent = existingDoc?.content ?? "";
-  const docId = existingDoc?.id ?? generateUUID();
+    const existingContent = existingDoc?.content ?? "";
+    const docId = existingDoc?.id ?? generateUUID();
 
-  const { text: updatedContent } = await generateText({
-    model: getOSModel(),
-    prompt: buildPrompt({ existingContent, transcript, chatId }),
-  });
+    const { text: updatedContent } = await generateText({
+      model: getOSModel(),
+      prompt: buildPrompt({ existingContent, transcript, chatId }),
+    });
 
-  await saveDocument({
-    id: docId,
-    title: "__kb__",
-    content: updatedContent,
-    kind: "text",
-    userId,
-  });
+    console.log(
+      "[knowledge-agent] updated KB —",
+      updatedContent.length,
+      "chars (doc id:",
+      docId,
+      ")"
+    );
+
+    await saveDocument({
+      id: docId,
+      title: "__kb__",
+      content: updatedContent,
+      kind: "text",
+      userId,
+    });
+
+    console.log("[knowledge-agent] saved KB document");
+  } catch (err) {
+    console.error("[knowledge-agent] error:", err);
+  }
 }

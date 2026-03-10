@@ -5,12 +5,13 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
   type MemoryChunk,
+  type MemoryIngestionLog,
   type Narrative,
   type ProposedFact,
   type ProposedPursuit,
   type Reflection,
-  type ReflectionFeedback,
   memoryChunk,
+  memoryIngestionLog,
   narrative,
   reflection,
   reflectionFeedback,
@@ -246,4 +247,42 @@ export async function saveReflectionFeedback({
       editedText: item.editedText,
     }))
   );
+}
+
+// ─── Ingestion Log ─────────────────────────────────────────────────────────────
+
+export async function createIngestionLog({
+  chatId,
+  userId,
+  agentType,
+  processedMessageIds,
+}: {
+  chatId: string;
+  userId: string;
+  agentType: "reflection" | "knowledge";
+  processedMessageIds: string[];
+}): Promise<void> {
+  await db
+    .insert(memoryIngestionLog)
+    .values({ chatId, userId, agentType, processedMessageIds });
+}
+
+export async function getIngestionLog({
+  chatId,
+  agentType,
+}: {
+  chatId: string;
+  agentType: "reflection" | "knowledge";
+}): Promise<Pick<MemoryIngestionLog, "id" | "ingestedAt"> | undefined> {
+  const [result] = await db
+    .select({ id: memoryIngestionLog.id, ingestedAt: memoryIngestionLog.ingestedAt })
+    .from(memoryIngestionLog)
+    .where(
+      and(
+        eq(memoryIngestionLog.chatId, chatId),
+        eq(memoryIngestionLog.agentType, agentType)
+      )
+    )
+    .limit(1);
+  return result;
 }
