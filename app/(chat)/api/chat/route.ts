@@ -36,6 +36,7 @@ import { convertToUIMessages, generateUUID } from "@/lib/utils";
 import { updateKnowledgeBase } from "@/lib/ai/agents/knowledge-agent";
 import { runReflectionAgent } from "@/lib/ai/agents/reflection-agent";
 import { assembleContext } from "@/lib/memory/context-assembly";
+import { queryAdkMemory } from "@/lib/memory/adk/query-agent";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
@@ -141,6 +142,7 @@ export async function POST(request: Request) {
 
     // Assemble long-term memory context (no-op when MEMORY_ENABLED is unset)
     let memoryContext = "";
+    let adkContext = "";
     if (process.env.MEMORY_ENABLED && message?.role === "user") {
       const latestText = (message.parts as Array<{ type: string; text?: string }>)
         .filter((p) => p.type === "text")
@@ -148,23 +150,22 @@ export async function POST(request: Request) {
         .join(" ")
         .trim();
       if (latestText) {
-        try {
-          memoryContext = await assembleContext({
-            userId: session.user.id,
-            userMessage: latestText,
-          });
-        } catch {
-          // Non-fatal: proceed without memory context
-        }
+        [memoryContext, adkContext] = await Promise.all([
+          assembleContext({ userId: session.user.id, userMessage: latestText }).catch(() => ""),
+          queryAdkMemory({ userId: session.user.id, userMessage: latestText }).catch(() => ""),
+        ]);
+        console.log("[memory:vector]", memoryContext || "(none)");
+        console.log("[memory:adk]", adkContext || "(none)");
       }
     }
+    const contextBlock = [memoryContext, adkContext].filter(Boolean).join("\n\n---\n\n");
 
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
         const baseSystemPrompt = systemPrompt({ selectedChatModel, requestHints });
-        const fullSystemPrompt = memoryContext
-          ? `${baseSystemPrompt}\n\n---\n\n${memoryContext}`
+        const fullSystemPrompt = contextBlock
+          ? `${baseSystemPrompt}\n\n---\n\n${contextBlock}`
           : baseSystemPrompt;
         const result = streamText({
           model: getLanguageModel(selectedChatModel),
@@ -255,6 +256,21 @@ export async function POST(request: Request) {
               userId: session.user.id,
             });
           });
+          if (process.env.MEMORY_ENABLED) {
+            after(async () => {
+              const { buildExchangeText, ingestExchange } = await import(
+                "@/lib/memory/adk/ingest-agent"
+              );
+              const exchangeText = buildExchangeText(finishedMessages);
+              if (exchangeText) {
+                await ingestExchange({
+                  userId: session.user.id,
+                  chatId: id,
+                  exchangeText,
+                });
+              }
+            });
+          }
         }
       },
       onError: () => "Oops, an error occurred!",

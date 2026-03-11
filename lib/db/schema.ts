@@ -286,3 +286,37 @@ export const memoryIngestionLog = pgTable("MemoryIngestionLog", {
 });
 
 export type MemoryIngestionLog = InferSelectModel<typeof memoryIngestionLog>;
+
+// ADK Memory tables — parallel memory system using LLM pipeline (no embeddings)
+export type AdkConnection = { linkedTo: string; relationship: string };
+
+export const adkMemory = pgTable("AdkMemory", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  chatId: uuid("chatId").references(() => chat.id),
+  source: text("source").notNull(), // e.g. "chat-exchange"
+  summary: text("summary").notNull(),
+  entities: json("entities").$type<string[]>().notNull().default([]),
+  topics: json("topics").$type<string[]>().notNull().default([]),
+  importance: real("importance").notNull().default(0.5),
+  connections: json("connections").$type<AdkConnection[]>().notNull().default([]),
+  consolidated: boolean("consolidated").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type AdkMemory = InferSelectModel<typeof adkMemory>;
+
+export const adkInsight = pgTable("AdkInsight", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  summary: text("summary").notNull(),
+  insight: text("insight").notNull(),
+  memoryIds: json("memoryIds").$type<string[]>().notNull().default([]),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type AdkInsight = InferSelectModel<typeof adkInsight>;

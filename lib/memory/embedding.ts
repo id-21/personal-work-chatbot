@@ -3,7 +3,7 @@ import "server-only";
 import { gateway } from "@ai-sdk/gateway";
 import { embed, embedMany as sdkEmbedMany } from "ai";
 
-const embeddingModel = gateway.textEmbeddingModel("google/text-embedding-004");
+const embeddingModel = gateway.embeddingModel("google/text-embedding-005");
 
 export async function embedText(text: string): Promise<number[]> {
   const { embedding } = await embed({ model: embeddingModel, value: text });

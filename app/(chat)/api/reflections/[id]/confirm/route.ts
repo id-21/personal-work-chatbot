@@ -56,25 +56,30 @@ export async function POST(
     .filter((f): f is ProposedFact => f !== null);
 
   // Embed + store each accepted fact, then update narrative
-  await Promise.all(
-    acceptedFacts.map(async (fact) => {
-      const embedding = await embedText(fact.text);
-      await createMemoryChunk({
-        userId: session.user.id,
-        chatId: reflection.chatId,
-        sourceMessageIds: fact.sourceMessageIds,
-        text: fact.text,
-        embedding,
-        tags: [fact.topic],
-        importance: fact.confidence,
-      });
-      await updateNarrativeWithFact({
-        userId: session.user.id,
-        topic: fact.topic,
-        factText: fact.text,
-      });
-    })
-  );
+  try {
+    await Promise.all(
+      acceptedFacts.map(async (fact) => {
+        const embedding = await embedText(fact.text);
+        await createMemoryChunk({
+          userId: session.user.id,
+          chatId: reflection.chatId,
+          sourceMessageIds: fact.sourceMessageIds,
+          text: fact.text,
+          embedding,
+          tags: [fact.topic],
+          importance: fact.confidence,
+        });
+        await updateNarrativeWithFact({
+          userId: session.user.id,
+          topic: fact.topic,
+          factText: fact.text,
+        });
+      })
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return Response.json({ error: `Failed to process facts: ${message}` }, { status: 500 });
+  }
 
   await updateReflectionStatus({ id, status: "confirmed" });
 

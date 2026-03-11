@@ -189,11 +189,15 @@ function ReflectionCard({ reflection }: { reflection: Reflection }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ feedback }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
       toast.success("Memory saved");
       router.refresh();
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Failed to save memory: ${message}`);
       setSubmitting(false);
     }
   }

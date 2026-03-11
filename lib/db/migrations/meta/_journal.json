@@ -78,6 +78,13 @@
       "when": 1773111802183,
       "tag": "0010_swift_terrax",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1773165592032,
+      "tag": "0011_bizarre_ego",
+      "breakpoints": true
     }
   ]
 }
