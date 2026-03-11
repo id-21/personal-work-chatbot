@@ -1,11 +1,14 @@
-import { LlmAgent, FunctionTool, InMemoryRunner } from "@google/adk";
+import { LlmAgent, FunctionTool, InMemoryRunner, getFunctionCalls, getFunctionResponses } from "@google/adk";
 import { createUserContent, Type } from "@google/genai";
 import {
   getUnconsolidatedAdkMemories,
   markMemoriesConsolidated,
   updateAdkMemoryConnections,
   createAdkInsight,
+  createAgentRun,
+  updateAgentRun,
 } from "./queries";
+import type { AgentLog } from "@/lib/db/schema";
 
 export async function runConsolidation({ userId }: { userId: string }) {
   const readTool = new FunctionTool({
@@ -104,10 +107,30 @@ Steps:
 
   const runner = new InMemoryRunner({ agent, appName: "memory_consolidate" });
 
-  for await (const _event of runner.runEphemeral({
-    userId,
-    newMessage: createUserContent("Consolidate memories now."),
-  })) {
-    // Agent calls tools automatically
+  const { id: runId } = await createAgentRun({ userId, chatId: null, agentName: "consolidate_agent" });
+  console.log("[adk:consolidate] start", { userId, runId });
+
+  const logs: AgentLog[] = [];
+  try {
+    for await (const event of runner.runEphemeral({
+      userId,
+      newMessage: createUserContent("Consolidate memories now."),
+    })) {
+      for (const call of getFunctionCalls(event)) {
+        console.log("[adk:consolidate] tool_call", call.name, call.args);
+        logs.push({ type: "tool_call", name: call.name, data: call.args, timestamp: Date.now() });
+      }
+      for (const resp of getFunctionResponses(event)) {
+        console.log("[adk:consolidate] tool_result", resp.name, resp.response);
+        logs.push({ type: "tool_result", name: resp.name, data: resp.response, timestamp: Date.now() });
+      }
+    }
+    await updateAgentRun({ id: runId, status: "done", logs, finishedAt: new Date() });
+    console.log("[adk:consolidate] done", { runId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log("[adk:consolidate] error", { runId, message });
+    logs.push({ type: "error", data: message, timestamp: Date.now() });
+    await updateAgentRun({ id: runId, status: "error", logs, finishedAt: new Date() });
   }
 }

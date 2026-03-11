@@ -1,9 +1,9 @@
 import "server-only";
 
-import { and, count, eq, desc } from "drizzle-orm";
+import { and, count, eq, desc, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { adkMemory, adkInsight, type AdkConnection } from "@/lib/db/schema";
+import { adkMemory, adkInsight, agentRun, type AdkConnection, type AgentLog } from "@/lib/db/schema";
 
 // biome-ignore lint: Forbidden non-null assertion.
 const client = postgres(process.env.POSTGRES_URL!);
@@ -124,4 +124,54 @@ export async function getAllAdkInsights({ userId }: { userId: string }) {
     .from(adkInsight)
     .where(eq(adkInsight.userId, userId))
     .orderBy(desc(adkInsight.createdAt));
+}
+
+// Agent run tracking
+
+export async function createAgentRun({
+  userId,
+  chatId,
+  agentName,
+}: {
+  userId: string;
+  chatId: string | null;
+  agentName: string;
+}): Promise<{ id: string }> {
+  const [row] = await db
+    .insert(agentRun)
+    .values({ userId, chatId, agentName, status: "running" })
+    .returning({ id: agentRun.id });
+  return row;
+}
+
+export async function updateAgentRun({
+  id,
+  status,
+  logs,
+  finishedAt,
+}: {
+  id: string;
+  status: string;
+  logs: AgentLog[];
+  finishedAt: Date;
+}) {
+  await db
+    .update(agentRun)
+    .set({ status, logs, finishedAt })
+    .where(eq(agentRun.id, id));
+}
+
+export async function getRecentAgentRuns({
+  userId,
+  sinceMs = 10 * 60 * 1000,
+}: {
+  userId: string;
+  sinceMs?: number;
+}) {
+  const since = new Date(Date.now() - sinceMs);
+  return db
+    .select()
+    .from(agentRun)
+    .where(and(eq(agentRun.userId, userId), gte(agentRun.createdAt, since)))
+    .orderBy(desc(agentRun.createdAt));
 }

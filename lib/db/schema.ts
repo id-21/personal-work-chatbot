@@ -320,3 +320,28 @@ export const adkInsight = pgTable("AdkInsight", {
 });
 
 export type AdkInsight = InferSelectModel<typeof adkInsight>;
+
+// Agent run tracking — records each ADK agent invocation with status + tool logs
+export type AgentLog = {
+  type: "tool_call" | "tool_result" | "info" | "error";
+  timestamp: number;
+  name?: string;
+  data: unknown;
+};
+
+export const agentRun = pgTable("AgentRun", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  chatId: uuid("chatId").references(() => chat.id),
+  agentName: text("agentName").notNull(), // e.g. "ingest_agent", "consolidate_agent"
+  status: varchar("status", { length: 16 }).notNull().default("running"),
+    // 'running' | 'done' | 'error'
+  logs: json("logs").$type<AgentLog[]>().notNull().default([]),
+  startedAt: timestamp("startedAt").notNull().defaultNow(),
+  finishedAt: timestamp("finishedAt"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type AgentRun = InferSelectModel<typeof agentRun>;

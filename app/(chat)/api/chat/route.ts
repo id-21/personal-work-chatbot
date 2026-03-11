@@ -261,7 +261,8 @@ export async function POST(request: Request) {
               const { buildExchangeText, ingestExchange } = await import(
                 "@/lib/memory/adk/ingest-agent"
               );
-              const exchangeText = buildExchangeText(finishedMessages);
+              // uiMessages has the user message; finishedMessages has the assistant response
+              const exchangeText = buildExchangeText([...uiMessages, ...finishedMessages]);
               if (exchangeText) {
                 await ingestExchange({
                   userId: session.user.id,
