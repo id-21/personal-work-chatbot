@@ -1,4 +1,4 @@
-import { LlmAgent, FunctionTool, InMemoryRunner, getFunctionCalls, getFunctionResponses } from "@google/adk";
+import { LlmAgent, FunctionTool, InMemoryRunner, getFunctionCalls, getFunctionResponses, isFinalResponse } from "@google/adk";
 import { createUserContent, Type } from "@google/genai";
 import {
   getUnconsolidatedAdkMemories,
@@ -123,6 +123,13 @@ Steps:
       for (const resp of getFunctionResponses(event)) {
         console.log("[adk:consolidate] tool_result", resp.name, resp.response);
         logs.push({ type: "tool_result", name: resp.name, data: resp.response, timestamp: Date.now() });
+      }
+      if (isFinalResponse(event) && event.content?.parts?.length) {
+        const text = event.content.parts.map((p: { text?: string }) => p.text ?? "").join("").trim();
+        if (text) {
+          console.log("[adk:consolidate] response", text);
+          logs.push({ type: "info", data: text, timestamp: Date.now() });
+        }
       }
     }
     await updateAgentRun({ id: runId, status: "done", logs, finishedAt: new Date() });

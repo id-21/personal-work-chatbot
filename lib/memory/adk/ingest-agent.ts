@@ -1,4 +1,4 @@
-import { LlmAgent, FunctionTool, InMemoryRunner, getFunctionCalls, getFunctionResponses } from "@google/adk";
+import { LlmAgent, FunctionTool, InMemoryRunner, getFunctionCalls, getFunctionResponses, isFinalResponse } from "@google/adk";
 import { createUserContent, Type } from "@google/genai";
 import type { UIMessage } from "ai";
 import { after } from "next/server";
@@ -120,6 +120,13 @@ lasting value. If there is nothing worth storing, do not call store_memory.`,
       for (const resp of getFunctionResponses(event)) {
         console.log("[adk:ingest] tool_result", resp.name, resp.response);
         logs.push({ type: "tool_result", name: resp.name, data: resp.response, timestamp: Date.now() });
+      }
+      if (isFinalResponse(event) && event.content?.parts?.length) {
+        const text = event.content.parts.map((p: { text?: string }) => p.text ?? "").join("").trim();
+        if (text) {
+          console.log("[adk:ingest] response", text);
+          logs.push({ type: "info", data: text, timestamp: Date.now() });
+        }
       }
     }
     await updateAgentRun({ id: runId, status: "done", logs, finishedAt: new Date() });
