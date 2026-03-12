@@ -1,4 +1,4 @@
-import { LlmAgent, FunctionTool, InMemoryRunner, getFunctionCalls, getFunctionResponses, isFinalResponse } from "@google/adk";
+import { LlmAgent, FunctionTool, InMemoryRunner, getFunctionCalls, getFunctionResponses } from "@google/adk";
 import { createUserContent, Type } from "@google/genai";
 import type { UIMessage } from "ai";
 import { after } from "next/server";
@@ -107,12 +107,14 @@ lasting value. If there is nothing worth storing, do not call store_memory.`,
 
   const logs: AgentLog[] = [];
   try {
+    let eventCount = 0;
     for await (const event of runner.runEphemeral({
       userId,
       newMessage: createUserContent(
         `Process and store a memory from this conversation exchange:\n\n${exchangeText}`,
       ),
     })) {
+      eventCount++;
       for (const call of getFunctionCalls(event)) {
         console.log("[adk:ingest] tool_call", call.name, call.args);
         logs.push({ type: "tool_call", name: call.name, data: call.args, timestamp: Date.now() });
@@ -121,14 +123,17 @@ lasting value. If there is nothing worth storing, do not call store_memory.`,
         console.log("[adk:ingest] tool_result", resp.name, resp.response);
         logs.push({ type: "tool_result", name: resp.name, data: resp.response, timestamp: Date.now() });
       }
-      if (isFinalResponse(event) && event.content?.parts?.length) {
-        const text = event.content.parts.map((p: { text?: string }) => p.text ?? "").join("").trim();
-        if (text) {
-          console.log("[adk:ingest] response", text);
-          logs.push({ type: "info", data: text, timestamp: Date.now() });
+      if (event.content?.parts) {
+        for (const part of event.content.parts) {
+          const text = (part as { text?: string }).text?.trim();
+          if (text) {
+            console.log("[adk:ingest] text", text);
+            logs.push({ type: "info", data: text, timestamp: Date.now() });
+          }
         }
       }
     }
+    console.log("[adk:ingest] loop_done", { eventCount, logCount: logs.length });
     await updateAgentRun({ id: runId, status: "done", logs, finishedAt: new Date() });
     console.log("[adk:ingest] done", { runId });
   } catch (error) {

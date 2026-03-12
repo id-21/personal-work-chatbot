@@ -1,4 +1,4 @@
-import { LlmAgent, FunctionTool, InMemoryRunner, getFunctionCalls, getFunctionResponses, isFinalResponse } from "@google/adk";
+import { LlmAgent, FunctionTool, InMemoryRunner, getFunctionCalls, getFunctionResponses } from "@google/adk";
 import { createUserContent, Type } from "@google/genai";
 import {
   getUnconsolidatedAdkMemories,
@@ -112,10 +112,12 @@ Steps:
 
   const logs: AgentLog[] = [];
   try {
+    let eventCount = 0;
     for await (const event of runner.runEphemeral({
       userId,
       newMessage: createUserContent("Consolidate memories now."),
     })) {
+      eventCount++;
       for (const call of getFunctionCalls(event)) {
         console.log("[adk:consolidate] tool_call", call.name, call.args);
         logs.push({ type: "tool_call", name: call.name, data: call.args, timestamp: Date.now() });
@@ -124,14 +126,17 @@ Steps:
         console.log("[adk:consolidate] tool_result", resp.name, resp.response);
         logs.push({ type: "tool_result", name: resp.name, data: resp.response, timestamp: Date.now() });
       }
-      if (isFinalResponse(event) && event.content?.parts?.length) {
-        const text = event.content.parts.map((p: { text?: string }) => p.text ?? "").join("").trim();
-        if (text) {
-          console.log("[adk:consolidate] response", text);
-          logs.push({ type: "info", data: text, timestamp: Date.now() });
+      if (event.content?.parts) {
+        for (const part of event.content.parts) {
+          const text = (part as { text?: string }).text?.trim();
+          if (text) {
+            console.log("[adk:consolidate] text", text);
+            logs.push({ type: "info", data: text, timestamp: Date.now() });
+          }
         }
       }
     }
+    console.log("[adk:consolidate] loop_done", { eventCount, logCount: logs.length });
     await updateAgentRun({ id: runId, status: "done", logs, finishedAt: new Date() });
     console.log("[adk:consolidate] done", { runId });
   } catch (error) {
