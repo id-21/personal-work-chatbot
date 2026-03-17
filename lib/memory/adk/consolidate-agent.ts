@@ -90,7 +90,7 @@ export async function runConsolidation({ userId }: { userId: string }) {
 
   const agent = new LlmAgent({
     name: "consolidate_agent",
-    model: "gemini-2.5-flash-lite-preview-06-17",
+    model: "gemini-2.5-flash-lite",
     description: "Finds cross-cutting patterns between stored memories.",
     instruction: `You are a Memory Consolidation Agent. Your job is to find meaningful
 connections between stored memories.
@@ -126,7 +126,7 @@ Steps:
         console.log("[adk:consolidate] tool_result", resp.name, resp.response);
         logs.push({ type: "tool_result", name: resp.name, data: resp.response, timestamp: Date.now() });
       }
-      if (event.content?.parts) {
+      if (event.author !== "user" && event.content?.parts) {
         for (const part of event.content.parts) {
           const text = (part as { text?: string }).text?.trim();
           if (text) {

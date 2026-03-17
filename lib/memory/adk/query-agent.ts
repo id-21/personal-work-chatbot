@@ -51,7 +51,7 @@ export async function queryAdkMemory({
 
   const agent = new LlmAgent({
     name: "query_agent",
-    model: "gemini-2.5-flash-lite-preview-06-17",
+    model: "gemini-2.5-flash-lite",
     description: "Synthesizes relevant context from stored memories.",
     instruction: `You are a Memory Query Agent. Your job is to provide relevant
 context from stored memories to help answer the user's current question.

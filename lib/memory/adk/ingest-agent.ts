@@ -90,7 +90,7 @@ export async function ingestExchange({
 
   const agent = new LlmAgent({
     name: "ingest_agent",
-    model: "gemini-2.5-flash-lite-preview-06-17",
+    model: "gemini-2.5-flash-lite",
     description: "Extracts structured memory from raw conversation text.",
     instruction: `You are a Memory Ingest Agent. Extract the most important information
 from the conversation exchange and call store_memory exactly once. Focus on facts,
@@ -115,6 +115,12 @@ lasting value. If there is nothing worth storing, do not call store_memory.`,
       ),
     })) {
       eventCount++;
+      console.log("[adk:ingest] event_debug", {
+        author: event.author,
+        hasContent: !!event.content,
+        partsLen: event.content?.parts?.length ?? 0,
+        errorCode: (event as { errorCode?: string }).errorCode,
+      });
       for (const call of getFunctionCalls(event)) {
         console.log("[adk:ingest] tool_call", call.name, call.args);
         logs.push({ type: "tool_call", name: call.name, data: call.args, timestamp: Date.now() });
@@ -123,7 +129,7 @@ lasting value. If there is nothing worth storing, do not call store_memory.`,
         console.log("[adk:ingest] tool_result", resp.name, resp.response);
         logs.push({ type: "tool_result", name: resp.name, data: resp.response, timestamp: Date.now() });
       }
-      if (event.content?.parts) {
+      if (event.author !== "user" && event.content?.parts) {
         for (const part of event.content.parts) {
           const text = (part as { text?: string }).text?.trim();
           if (text) {
