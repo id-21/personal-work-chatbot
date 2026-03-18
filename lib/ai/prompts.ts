@@ -35,6 +35,12 @@ Do not update document right after creating it. Wait for user feedback or reques
 - ONLY use when the user explicitly asks for suggestions on an existing document
 - Requires a valid document ID from a previously created document
 - Never use for general questions or information requests
+
+**Using \`createCalendarEvent\`:**
+- ALWAYS call this tool when the user asks to schedule, remind, book, or add anything to their calendar — never just describe what you would do in text
+- Infer timezone from the user's city/country shown above; default to UTC if unknown
+- End time defaults to 1 hour after start if not specified
+- Do NOT use for hypothetical planning — only when the user clearly wants an actual calendar entry
 `;
 
 export const regularPrompt = `You are a friendly assistant! Keep your responses concise and helpful.

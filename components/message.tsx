@@ -342,6 +342,101 @@ const PurePreviewMessage = ({
               );
             }
 
+            if (type === "tool-createCalendarEvent") {
+              const { toolCallId, state } = part;
+              const approvalId = (part as { approval?: { id: string } })
+                .approval?.id;
+              const isDenied =
+                state === "output-denied" ||
+                (state === "approval-responded" &&
+                  (part as { approval?: { approved?: boolean } }).approval
+                    ?.approved === false);
+
+              if (isDenied) {
+                return (
+                  <Tool className="w-full" defaultOpen={true} key={toolCallId}>
+                    <ToolHeader
+                      state="output-denied"
+                      type="tool-createCalendarEvent"
+                    />
+                    <ToolContent>
+                      <div className="px-4 py-3 text-muted-foreground text-sm">
+                        Calendar event creation was denied.
+                      </div>
+                    </ToolContent>
+                  </Tool>
+                );
+              }
+
+              if (state === "output-available") {
+                const output = part.output as
+                  | {
+                      id?: string;
+                      title?: string;
+                      start?: string;
+                      link?: string;
+                    }
+                  | { error: string };
+                return (
+                  <Tool className="w-full" defaultOpen={true} key={toolCallId}>
+                    <ToolHeader
+                      state={state}
+                      type="tool-createCalendarEvent"
+                    />
+                    <ToolContent>
+                      <ToolOutput
+                        errorText={
+                          "error" in output ? output.error : undefined
+                        }
+                        output={"error" in output ? undefined : output}
+                      />
+                    </ToolContent>
+                  </Tool>
+                );
+              }
+
+              return (
+                <Tool className="w-full" defaultOpen={true} key={toolCallId}>
+                  <ToolHeader state={state} type="tool-createCalendarEvent" />
+                  <ToolContent>
+                    {(state === "input-available" ||
+                      state === "approval-requested") && (
+                      <ToolInput input={part.input} />
+                    )}
+                    {state === "approval-requested" && approvalId && (
+                      <div className="flex items-center justify-end gap-2 border-t px-4 py-3">
+                        <button
+                          className="rounded-md px-3 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground"
+                          onClick={() => {
+                            addToolApprovalResponse({
+                              id: approvalId,
+                              approved: false,
+                              reason: "User denied calendar event creation",
+                            });
+                          }}
+                          type="button"
+                        >
+                          Deny
+                        </button>
+                        <button
+                          className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm transition-colors hover:bg-primary/90"
+                          onClick={() => {
+                            addToolApprovalResponse({
+                              id: approvalId,
+                              approved: true,
+                            });
+                          }}
+                          type="button"
+                        >
+                          Allow
+                        </button>
+                      </div>
+                    )}
+                  </ToolContent>
+                </Tool>
+              );
+            }
+
             return null;
           })}
 

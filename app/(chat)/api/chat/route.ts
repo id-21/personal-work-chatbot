@@ -17,6 +17,7 @@ import { createDocument } from "@/lib/ai/tools/create-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
+import { createCalendarEvent } from "@/lib/ai/tools/create-calendar-event";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
@@ -179,6 +180,7 @@ export async function POST(request: Request) {
                 "createDocument",
                 "updateDocument",
                 "requestSuggestions",
+                "createCalendarEvent",
               ],
           providerOptions: isReasoningModel
             ? {
@@ -192,6 +194,7 @@ export async function POST(request: Request) {
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
+            createCalendarEvent,
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
