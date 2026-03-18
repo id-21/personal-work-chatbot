@@ -388,7 +388,11 @@ const PurePreviewMessage = ({
                         errorText={
                           "error" in output ? output.error : undefined
                         }
-                        output={"error" in output ? undefined : output}
+                        output={
+                          "error" in output
+                            ? undefined
+                            : JSON.stringify(output, null, 2)
+                        }
                       />
                     </ToolContent>
                   </Tool>

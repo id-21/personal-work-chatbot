@@ -47,7 +47,7 @@ export const createCalendarEvent = tool({
   }),
   needsApproval: true,
   execute: async (input) => {
-    const calendarId = process.env.GOOGLE_CALENDAR_ID ?? "primary";
+    const calendarId = process.env.GOOGLE_CALENDAR_ID || "primary";
     const resolvedTimezone = input.timezone ?? "UTC";
     const resolvedEnd = input.endDateTime ?? addOneHour(input.startDateTime);
 
@@ -55,6 +55,7 @@ export const createCalendarEvent = tool({
     try {
       calendar = getCalendarClient();
     } catch (err) {
+      console.error("[createCalendarEvent] client init failed:", err);
       return {
         error:
           err instanceof Error
@@ -85,6 +86,7 @@ export const createCalendarEvent = tool({
         link: event.htmlLink,
       };
     } catch (err) {
+      console.error("[createCalendarEvent] API call failed:", err);
       return {
         error:
           err instanceof Error
