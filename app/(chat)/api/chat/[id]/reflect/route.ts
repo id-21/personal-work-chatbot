@@ -7,7 +7,7 @@ export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!process.env.MEMORY_ENABLED) {
+  if (!process.env.LEGACY_MEMORY_ENABLED) {
     return Response.json({ ok: true });
   }
 

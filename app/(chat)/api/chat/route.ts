@@ -152,10 +152,12 @@ export async function POST(request: Request) {
         .trim();
       if (latestText) {
         [memoryContext, adkContext] = await Promise.all([
-          assembleContext({ userId: session.user.id, userMessage: latestText }).catch(() => ""),
+          process.env.LEGACY_MEMORY_ENABLED
+            ? assembleContext({ userId: session.user.id, userMessage: latestText }).catch(() => "")
+            : Promise.resolve(""),
           queryAdkMemory({ userId: session.user.id, userMessage: latestText }).catch(() => ""),
         ]);
-        console.log("[memory:vector]", memoryContext || "(none)");
+        if (process.env.LEGACY_MEMORY_ENABLED) console.log("[memory:vector]", memoryContext || "(none)");
         console.log("[memory:adk]", adkContext || "(none)");
       }
     }
@@ -247,18 +249,20 @@ export async function POST(request: Request) {
             })),
           });
 
-          after(async () => {
-            await updateKnowledgeBase({
-              chatId: id,
-              userId: session.user.id,
+          if (process.env.LEGACY_MEMORY_ENABLED) {
+            after(async () => {
+              await updateKnowledgeBase({
+                chatId: id,
+                userId: session.user.id,
+              });
             });
-          });
-          after(async () => {
-            await runReflectionAgent({
-              chatId: id,
-              userId: session.user.id,
+            after(async () => {
+              await runReflectionAgent({
+                chatId: id,
+                userId: session.user.id,
+              });
             });
-          });
+          }
           if (process.env.MEMORY_ENABLED) {
             after(async () => {
               const { buildExchangeText, ingestExchange } = await import(
