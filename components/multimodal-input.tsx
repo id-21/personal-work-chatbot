@@ -4,6 +4,7 @@ import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
 import { CheckIcon, Loader2Icon, MicIcon } from "lucide-react";
+import { LottieLoader } from "./lottie-loader";
 import {
   type ChangeEvent,
   type Dispatch,
@@ -410,7 +411,7 @@ function PureMultimodalInput({
               variant="ghost"
             >
               {recordingState === "transcribing" ? (
-                <Loader2Icon className="animate-spin" size={16} />
+                <LottieLoader size={20} />
               ) : recordingState === "recording" ? (
                 <span className="flex size-4 items-center justify-center rounded-full bg-destructive">
                   <span className="size-[7px] rounded-[1px] bg-white" />

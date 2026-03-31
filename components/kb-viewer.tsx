@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import type { Document } from "@/lib/db/schema";
+import { LottieLoader } from "@/components/lottie-loader";
 
 function fetcher(url: string) {
   return fetch(url).then((r) => r.json());
@@ -31,7 +32,9 @@ export function KbViewer({ docId }: { docId: string }) {
 
   if (isLoading) {
     return (
-      <p className="text-muted-foreground text-sm animate-pulse">Loading…</p>
+      <div className="flex items-center justify-center py-4">
+        <LottieLoader size={32} />
+      </div>
     );
   }
 

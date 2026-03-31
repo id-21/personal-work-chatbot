@@ -1,5 +1,5 @@
 import cn from "classnames";
-import { LoaderIcon } from "./icons";
+import { LottieLoader } from "./lottie-loader";
 
 type ImageEditorProps = {
   title: string;
@@ -24,13 +24,9 @@ export function ImageEditor({
       })}
     >
       {status === "streaming" ? (
-        <div className="flex flex-row items-center gap-4">
-          {!isInline && (
-            <div className="animate-spin">
-              <LoaderIcon />
-            </div>
-          )}
-          <div>Generating Image...</div>
+        <div className="flex flex-col items-center gap-2">
+          <LottieLoader size={isInline ? 40 : 56} />
+          <div className="text-muted-foreground text-sm">Generating Image...</div>
         </div>
       ) : (
         <picture>

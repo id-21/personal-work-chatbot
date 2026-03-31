@@ -27,6 +27,7 @@ import {
 import type { Chat } from "@/lib/db/schema";
 import { fetcher } from "@/lib/utils";
 import { ChevronDownIcon, LoaderIcon } from "./icons";
+import { LottieLoader } from "./lottie-loader";
 import { ChatItem } from "./sidebar-history-item";
 
 type GroupedChats = {
@@ -269,26 +270,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   if (isLoading) {
     return (
       <SidebarGroup>
-        <div className="px-2 py-1 text-sidebar-foreground/50 text-xs">
-          Today
-        </div>
         <SidebarGroupContent>
-          <div className="flex flex-col">
-            {[44, 32, 28, 64, 52].map((item) => (
-              <div
-                className="flex h-8 items-center gap-2 rounded-md px-2"
-                key={item}
-              >
-                <div
-                  className="h-4 max-w-(--skeleton-width) flex-1 rounded-md bg-sidebar-accent-foreground/10"
-                  style={
-                    {
-                      "--skeleton-width": `${item}%`,
-                    } as React.CSSProperties
-                  }
-                />
-              </div>
-            ))}
+          <div className="flex items-center justify-center py-4">
+            <LottieLoader size={32} />
           </div>
         </SidebarGroupContent>
       </SidebarGroup>
