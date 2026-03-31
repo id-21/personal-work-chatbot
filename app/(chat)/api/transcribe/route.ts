@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     if (audio.size > 25 * 1024 * 1024) {
       return NextResponse.json(
         { error: "Audio file too large (max 25MB)" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
         method: "POST",
         headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
         body: openaiFormData,
-      },
+      }
     );
 
     if (!response.ok) {
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       console.error("[transcribe] OpenAI error:", error);
       return NextResponse.json(
         { error: "Transcription failed" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   } catch (_error) {
     return NextResponse.json(
       { error: "Failed to process request" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

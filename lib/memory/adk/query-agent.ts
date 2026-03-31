@@ -1,6 +1,11 @@
-import { LlmAgent, FunctionTool, InMemoryRunner, isFinalResponse } from "@google/adk";
+import {
+  FunctionTool,
+  InMemoryRunner,
+  isFinalResponse,
+  LlmAgent,
+} from "@google/adk";
 import { createUserContent, Type } from "@google/genai";
-import { getAllAdkMemories, getAllAdkInsights } from "./queries";
+import { getAllAdkInsights, getAllAdkMemories } from "./queries";
 
 export async function queryAdkMemory({
   userId,
@@ -72,7 +77,7 @@ Steps:
   for await (const event of runner.runEphemeral({
     userId,
     newMessage: createUserContent(
-      `What context from my memories is relevant to: ${userMessage}`,
+      `What context from my memories is relevant to: ${userMessage}`
     ),
   })) {
     if (isFinalResponse(event) && event.content?.parts?.length) {

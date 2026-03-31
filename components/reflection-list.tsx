@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
-import type { Reflection, ProposedFact, ProposedPursuit } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
+import type {
+  ProposedFact,
+  ProposedPursuit,
+  Reflection,
+} from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
 
 type FeedbackItem = {
@@ -29,18 +33,22 @@ function FactCard({
   onChange: (state: ItemState) => void;
 }) {
   return (
-    <div className={cn(
-      "rounded-lg border p-4 space-y-3 transition-opacity",
-      state.action === "reject" && "opacity-40"
-    )}>
+    <div
+      className={cn(
+        "rounded-lg border p-4 space-y-3 transition-opacity",
+        state.action === "reject" && "opacity-40"
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 space-y-1">
           {state.action === "edit" ? (
             <textarea
               className="w-full text-sm border rounded px-2 py-1.5 resize-none bg-background"
+              onChange={(e) =>
+                onChange({ ...state, editedText: e.target.value })
+              }
               rows={2}
               value={state.editedText}
-              onChange={(e) => onChange({ ...state, editedText: e.target.value })}
             />
           ) : (
             <p className="text-sm">{fact.text}</p>
@@ -62,32 +70,38 @@ function FactCard({
       </div>
       <div className="flex gap-2">
         <Button
+          onClick={() => onChange({ ...state, action: "accept" })}
           size="sm"
           variant={state.action === "accept" ? "default" : "outline"}
-          onClick={() => onChange({ ...state, action: "accept" })}
         >
           Accept
         </Button>
         <Button
+          onClick={() =>
+            onChange({
+              ...state,
+              action: "edit",
+              editedText: state.editedText || fact.text,
+            })
+          }
           size="sm"
           variant={state.action === "edit" ? "default" : "outline"}
-          onClick={() => onChange({ ...state, action: "edit", editedText: state.editedText || fact.text })}
         >
           Edit
         </Button>
         <Button
+          onClick={() => onChange({ ...state, action: "reject" })}
           size="sm"
           variant={state.action === "reject" ? "destructive" : "outline"}
-          onClick={() => onChange({ ...state, action: "reject" })}
         >
           Reject
         </Button>
         {fact.sourceMessageIds.length > 0 && (
           <a
-            href={`/chat/${fact.sourceMessageIds[0]}`}
             className="ml-auto text-xs text-muted-foreground underline-offset-2 hover:underline self-center"
-            target="_blank"
+            href={`/chat/${fact.sourceMessageIds[0]}`}
             rel="noreferrer"
+            target="_blank"
           >
             View source
           </a>
@@ -113,14 +127,21 @@ function PursuitCard({
   }[pursuit.urgency];
 
   return (
-    <div className={cn(
-      "rounded-lg border p-4 space-y-3 transition-opacity",
-      state.action === "reject" && "opacity-40"
-    )}>
+    <div
+      className={cn(
+        "rounded-lg border p-4 space-y-3 transition-opacity",
+        state.action === "reject" && "opacity-40"
+      )}
+    >
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium">{pursuit.title}</p>
-          <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", urgencyColor)}>
+          <span
+            className={cn(
+              "text-xs px-2 py-0.5 rounded-full font-medium",
+              urgencyColor
+            )}
+          >
             {pursuit.urgency}
           </span>
         </div>
@@ -128,16 +149,16 @@ function PursuitCard({
       </div>
       <div className="flex gap-2">
         <Button
+          onClick={() => onChange({ ...state, action: "accept" })}
           size="sm"
           variant={state.action === "accept" ? "default" : "outline"}
-          onClick={() => onChange({ ...state, action: "accept" })}
         >
           Accept
         </Button>
         <Button
+          onClick={() => onChange({ ...state, action: "reject" })}
           size="sm"
           variant={state.action === "reject" ? "destructive" : "outline"}
-          onClick={() => onChange({ ...state, action: "reject" })}
         >
           Reject
         </Button>
@@ -148,16 +169,18 @@ function PursuitCard({
 
 function ReflectionCard({ reflection }: { reflection: Reflection }) {
   const router = useRouter();
-  const [itemStates, setItemStates] = useState<Record<string, ItemState>>(() => {
-    const initial: Record<string, ItemState> = {};
-    for (const f of reflection.proposedFacts) {
-      initial[f.id] = { action: "accept", editedText: f.text };
+  const [itemStates, setItemStates] = useState<Record<string, ItemState>>(
+    () => {
+      const initial: Record<string, ItemState> = {};
+      for (const f of reflection.proposedFacts) {
+        initial[f.id] = { action: "accept", editedText: f.text };
+      }
+      for (const p of reflection.proposedPursuits) {
+        initial[p.id] = { action: "accept", editedText: p.title };
+      }
+      return initial;
     }
-    for (const p of reflection.proposedPursuits) {
-      initial[p.id] = { action: "accept", editedText: p.title };
-    }
-    return initial;
-  });
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const chatDate = new Date(reflection.createdAt).toLocaleDateString("en-US", {
@@ -203,7 +226,9 @@ function ReflectionCard({ reflection }: { reflection: Reflection }) {
   }
 
   async function handleDismiss() {
-    await fetch(`/api/reflections/${reflection.id}/confirm`, { method: "DELETE" });
+    await fetch(`/api/reflections/${reflection.id}/confirm`, {
+      method: "DELETE",
+    });
     router.refresh();
   }
 
@@ -213,16 +238,16 @@ function ReflectionCard({ reflection }: { reflection: Reflection }) {
         <div>
           <p className="text-sm font-medium">Session from {chatDate}</p>
           <a
-            href={`/chat/${reflection.chatId}`}
             className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+            href={`/chat/${reflection.chatId}`}
           >
             View conversation →
           </a>
         </div>
         <button
-          type="button"
-          onClick={handleDismiss}
           className="text-xs text-muted-foreground hover:text-foreground"
+          onClick={handleDismiss}
+          type="button"
         >
           Dismiss all
         </button>
@@ -235,10 +260,17 @@ function ReflectionCard({ reflection }: { reflection: Reflection }) {
           </h3>
           {reflection.proposedFacts.map((fact: ProposedFact) => (
             <FactCard
-              key={fact.id}
               fact={fact}
-              state={itemStates[fact.id] ?? { action: "accept", editedText: fact.text }}
-              onChange={(s) => setItemStates((prev) => ({ ...prev, [fact.id]: s }))}
+              key={fact.id}
+              onChange={(s) =>
+                setItemStates((prev) => ({ ...prev, [fact.id]: s }))
+              }
+              state={
+                itemStates[fact.id] ?? {
+                  action: "accept",
+                  editedText: fact.text,
+                }
+              }
             />
           ))}
         </div>
@@ -252,9 +284,16 @@ function ReflectionCard({ reflection }: { reflection: Reflection }) {
           {reflection.proposedPursuits.map((pursuit: ProposedPursuit) => (
             <PursuitCard
               key={pursuit.id}
+              onChange={(s) =>
+                setItemStates((prev) => ({ ...prev, [pursuit.id]: s }))
+              }
               pursuit={pursuit}
-              state={itemStates[pursuit.id] ?? { action: "accept", editedText: pursuit.title }}
-              onChange={(s) => setItemStates((prev) => ({ ...prev, [pursuit.id]: s }))}
+              state={
+                itemStates[pursuit.id] ?? {
+                  action: "accept",
+                  editedText: pursuit.title,
+                }
+              }
             />
           ))}
         </div>
@@ -263,17 +302,12 @@ function ReflectionCard({ reflection }: { reflection: Reflection }) {
       {reflection.casualTopics.length > 0 && (
         <div>
           <p className="text-xs text-muted-foreground">
-            Skipped (casual):{" "}
-            {reflection.casualTopics.join(", ")}
+            Skipped (casual): {reflection.casualTopics.join(", ")}
           </p>
         </div>
       )}
 
-      <Button
-        className="w-full"
-        onClick={handleConfirm}
-        disabled={submitting}
-      >
+      <Button className="w-full" disabled={submitting} onClick={handleConfirm}>
         {submitting ? "Saving..." : "Confirm & Save to Memory"}
       </Button>
     </div>

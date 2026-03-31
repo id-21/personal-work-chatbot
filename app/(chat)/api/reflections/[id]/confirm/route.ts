@@ -1,6 +1,7 @@
 import { auth } from "@/app/(auth)/auth";
-import { ChatSDKError } from "@/lib/errors";
 import { updateNarrativeWithFact } from "@/lib/ai/agents/narrative-agent";
+import type { ProposedFact } from "@/lib/db/schema";
+import { ChatSDKError } from "@/lib/errors";
 import { embedText } from "@/lib/memory/embedding";
 import {
   createMemoryChunk,
@@ -8,7 +9,6 @@ import {
   saveReflectionFeedback,
   updateReflectionStatus,
 } from "@/lib/memory/queries";
-import type { ProposedFact } from "@/lib/db/schema";
 
 interface FeedbackItem {
   itemId: string;
@@ -46,11 +46,14 @@ export async function POST(
   const acceptedFacts = feedback
     .filter((f) => f.itemType === "fact" && f.action !== "reject")
     .map((f) => {
-      const original = reflection.proposedFacts.find((pf: ProposedFact) => pf.id === f.itemId);
+      const original = reflection.proposedFacts.find(
+        (pf: ProposedFact) => pf.id === f.itemId
+      );
       if (!original) return null;
       return {
         ...original,
-        text: f.action === "edit" && f.editedText ? f.editedText : original.text,
+        text:
+          f.action === "edit" && f.editedText ? f.editedText : original.text,
       } as ProposedFact;
     })
     .filter((f): f is ProposedFact => f !== null);
@@ -78,7 +81,10 @@ export async function POST(
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return Response.json({ error: `Failed to process facts: ${message}` }, { status: 500 });
+    return Response.json(
+      { error: `Failed to process facts: ${message}` },
+      { status: 500 }
+    );
   }
 
   await updateReflectionStatus({ id, status: "confirmed" });

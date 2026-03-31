@@ -9,7 +9,7 @@ function getCalendarClient() {
 
   if (!clientId || !clientSecret || !refreshToken) {
     throw new Error(
-      "Missing required environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALENDAR_REFRESH_TOKEN",
+      "Missing required environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALENDAR_REFRESH_TOKEN"
     );
   }
 
@@ -40,7 +40,7 @@ export const createCalendarEvent = tool({
       .string()
       .optional()
       .describe(
-        "IANA timezone, e.g. 'America/New_York' or 'Asia/Kolkata'. Infer from the user's city/country context. Defaults to UTC.",
+        "IANA timezone, e.g. 'America/New_York' or 'Asia/Kolkata'. Infer from the user's city/country context. Defaults to UTC."
       ),
     description: z.string().optional().describe("Optional notes for the event"),
     location: z.string().optional().describe("Optional location string"),

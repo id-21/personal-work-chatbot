@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { memo, useState } from "react";
 import { toast } from "sonner";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
@@ -10,6 +11,7 @@ import {
   LockIcon,
   MoreHorizontalIcon,
   PencilEditIcon,
+  PlusIcon,
   ShareIcon,
   TrashIcon,
 } from "./icons";
@@ -42,6 +44,7 @@ const PureChatItem = ({
   onRename: (chatId: string, newTitle: string) => void;
   setOpenMobile: (open: boolean) => void;
 }) => {
+  const router = useRouter();
   const { visibilityType, setVisibilityType } = useChatVisibility({
     chatId: chat.id,
     initialVisibilityType: chat.visibility,
@@ -90,14 +93,13 @@ const PureChatItem = ({
             <input
               autoFocus
               className="w-full min-w-0 bg-transparent outline-none"
-              value={draftTitle}
-              onChange={(e) => setDraftTitle(e.target.value)}
-              onFocus={(e) => e.currentTarget.select()}
               onBlur={(e) => {
                 if (!e.currentTarget.parentElement?.contains(e.relatedTarget)) {
                   commitRename();
                 }
               }}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onFocus={(e) => e.currentTarget.select()}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -107,6 +109,7 @@ const PureChatItem = ({
                   setIsEditing(false);
                 }
               }}
+              value={draftTitle}
             />
           </div>
         )
@@ -117,6 +120,19 @@ const PureChatItem = ({
           </Link>
         </SidebarMenuButton>
       )}
+
+      <SidebarMenuAction
+        className="mr-6 data-[state=open]:bg-sidebar-accent"
+        onClick={() => {
+          setOpenMobile(false);
+          router.push(`/?parentId=${chat.id}`);
+        }}
+        showOnHover={!isActive}
+        title="New sub-chat"
+      >
+        <PlusIcon size={12} />
+        <span className="sr-only">New sub-chat</span>
+      </SidebarMenuAction>
 
       <DropdownMenu modal={true}>
         <DropdownMenuTrigger asChild>
@@ -131,8 +147,8 @@ const PureChatItem = ({
 
         <DropdownMenuContent
           align="end"
-          side="bottom"
           onCloseAutoFocus={(e) => e.preventDefault()}
+          side="bottom"
         >
           <DropdownMenuItem
             className="cursor-pointer"
@@ -140,6 +156,17 @@ const PureChatItem = ({
           >
             <PencilEditIcon />
             <span>Rename</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={() => {
+              setOpenMobile(false);
+              router.push(`/?parentId=${chat.id}`);
+            }}
+          >
+            <PlusIcon size={12} />
+            <span>New Sub-chat</span>
           </DropdownMenuItem>
 
           <DropdownMenuSub>

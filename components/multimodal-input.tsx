@@ -27,6 +27,7 @@ import {
   ModelSelectorName,
   ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
+import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import {
   chatModels,
   DEFAULT_CHAT_MODEL,
@@ -44,7 +45,6 @@ import {
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
 import { SuggestedActions } from "./suggested-actions";
-import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import { Button } from "./ui/button";
 import type { VisibilityType } from "./visibility-selector";
 
@@ -146,7 +146,8 @@ function PureMultimodalInput({
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
 
   const { recordingState, startRecording, stopRecording } = useAudioRecorder(
-    (transcript) => setInput((prev) => (prev ? `${prev} ${transcript}` : transcript)),
+    (transcript) =>
+      setInput((prev) => (prev ? `${prev} ${transcript}` : transcript))
   );
 
   const submitForm = useCallback(() => {
@@ -328,10 +329,10 @@ function PureMultimodalInput({
           if (!input.trim() && attachments.length === 0) {
             return;
           }
-          if (status !== "ready") {
-            toast.error("Please wait for the model to finish its response!");
-          } else {
+          if (status === "ready") {
             submitForm();
+          } else {
+            toast.error("Please wait for the model to finish its response!");
           }
         }}
       >
@@ -398,8 +399,12 @@ function PureMultimodalInput({
           <div className="flex items-center gap-1">
             <Button
               className="size-8 rounded-full"
-              disabled={status === "submitted" || recordingState === "transcribing"}
-              onClick={recordingState === "recording" ? stopRecording : startRecording}
+              disabled={
+                status === "submitted" || recordingState === "transcribing"
+              }
+              onClick={
+                recordingState === "recording" ? stopRecording : startRecording
+              }
               size="icon"
               type="button"
               variant="ghost"
@@ -417,14 +422,18 @@ function PureMultimodalInput({
             {status === "submitted" ? (
               <StopButton setMessages={setMessages} stop={stop} />
             ) : (
-            <PromptInputSubmit
-              className="size-8 rounded-full bg-primary text-primary-foreground transition-colors duration-200 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
-              data-testid="send-button"
-              disabled={!input.trim() || uploadQueue.length > 0 || recordingState !== "idle"}
-              status={status}
-            >
-              <ArrowUpIcon size={14} />
-            </PromptInputSubmit>
+              <PromptInputSubmit
+                className="size-8 rounded-full bg-primary text-primary-foreground transition-colors duration-200 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
+                data-testid="send-button"
+                disabled={
+                  !input.trim() ||
+                  uploadQueue.length > 0 ||
+                  recordingState !== "idle"
+                }
+                status={status}
+              >
+                <ArrowUpIcon size={14} />
+              </PromptInputSubmit>
             )}
           </div>
         </PromptInputToolbar>

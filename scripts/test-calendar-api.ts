@@ -16,7 +16,7 @@ async function testCalendarApi() {
   console.log("GOOGLE_CLIENT_SECRET:", clientSecret ? "SET" : "MISSING");
   console.log(
     "GOOGLE_CALENDAR_REFRESH_TOKEN:",
-    refreshToken ? "SET" : "MISSING",
+    refreshToken ? "SET" : "MISSING"
   );
 
   if (!clientId || !clientSecret || !refreshToken) {

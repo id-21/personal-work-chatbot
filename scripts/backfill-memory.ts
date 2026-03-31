@@ -10,19 +10,12 @@
  * Safe to re-run — already-processed chats are skipped via MemoryIngestionLog.
  */
 
+import { asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, asc } from "drizzle-orm";
 import { runReflectionAgent } from "../lib/ai/agents/reflection-agent";
-import {
-  getIngestionLog,
-  createIngestionLog,
-} from "../lib/memory/queries";
-import {
-  user,
-  chat,
-  message,
-} from "../lib/db/schema";
+import { chat, message, user } from "../lib/db/schema";
+import { createIngestionLog, getIngestionLog } from "../lib/memory/queries";
 
 if (!process.env.POSTGRES_URL) {
   console.error("[backfill] POSTGRES_URL is not set. Aborting.");

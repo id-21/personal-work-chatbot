@@ -1,5 +1,6 @@
 "use client";
 
+import { BookIcon, BrainIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
@@ -7,8 +8,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
-import { BookIcon, BrainIcon } from "lucide-react";
-import { fetcher } from "@/lib/utils";
 import { PlusIcon, TrashIcon } from "@/components/icons";
 import {
   getChatHistoryPaginationKey,
@@ -24,6 +23,7 @@ import {
   SidebarMenu,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { fetcher } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -105,9 +105,9 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
+                      asChild
                       className="h-8 p-1 md:h-fit md:p-2"
                       variant="ghost"
-                      asChild
                     >
                       <Link
                         href="/knowledge-base"
@@ -124,9 +124,9 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
+                      asChild
                       className="relative h-8 p-1 md:h-fit md:p-2"
                       variant="ghost"
-                      asChild
                     >
                       <Link
                         href="/reflections"
@@ -142,7 +142,8 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent align="end" className="hidden md:block">
-                    Memory Reflections{pendingCount > 0 ? ` (${pendingCount} pending)` : ""}
+                    Memory Reflections
+                    {pendingCount > 0 ? ` (${pendingCount} pending)` : ""}
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>

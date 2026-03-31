@@ -1,9 +1,15 @@
 import "server-only";
 
-import { and, count, eq, desc, gte } from "drizzle-orm";
+import { and, count, desc, eq, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { adkMemory, adkInsight, agentRun, type AdkConnection, type AgentLog } from "@/lib/db/schema";
+import {
+  type AdkConnection,
+  type AgentLog,
+  adkInsight,
+  adkMemory,
+  agentRun,
+} from "@/lib/db/schema";
 
 // biome-ignore lint: Forbidden non-null assertion.
 const client = postgres(process.env.POSTGRES_URL!);
@@ -71,7 +77,9 @@ export async function countUnconsolidatedAdkMemories({
   const [row] = await db
     .select({ value: count() })
     .from(adkMemory)
-    .where(and(eq(adkMemory.userId, userId), eq(adkMemory.consolidated, false)));
+    .where(
+      and(eq(adkMemory.userId, userId), eq(adkMemory.consolidated, false))
+    );
   return row?.value ?? 0;
 }
 
@@ -82,8 +90,8 @@ export async function markMemoriesConsolidated({ ids }: { ids: string[] }) {
       db
         .update(adkMemory)
         .set({ consolidated: true })
-        .where(eq(adkMemory.id, id)),
-    ),
+        .where(eq(adkMemory.id, id))
+    )
   );
 }
 
@@ -94,10 +102,7 @@ export async function updateAdkMemoryConnections({
   id: string;
   connections: AdkConnection[];
 }) {
-  await db
-    .update(adkMemory)
-    .set({ connections })
-    .where(eq(adkMemory.id, id));
+  await db.update(adkMemory).set({ connections }).where(eq(adkMemory.id, id));
 }
 
 export async function createAdkInsight({

@@ -1,6 +1,6 @@
 "use client";
 
-import { type UIMessage } from "ai";
+import type { UIMessage } from "ai";
 import { useEffect, useRef } from "react";
 
 const INACTIVITY_MS = 10 * 60 * 1000; // 10 minutes
@@ -13,10 +13,7 @@ const INACTIVITY_MS = 10 * 60 * 1000; // 10 minutes
  *
  * De-duplicated per chat via sessionStorage so it only fires once per session.
  */
-export function useSessionEndTrigger(
-  chatId: string,
-  messages: UIMessage[]
-) {
+export function useSessionEndTrigger(chatId: string, messages: UIMessage[]) {
   const triggeredKey = `reflect-triggered-${chatId}`;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -48,6 +45,6 @@ export function useSessionEndTrigger(
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: trigger is stable within this effect
+    // biome-ignore lint/correctness/useExhaustiveDependencies: trigger is stable within this effect
   }, [chatId]);
 }

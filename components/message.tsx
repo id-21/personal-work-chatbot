@@ -379,15 +379,10 @@ const PurePreviewMessage = ({
                   | { error: string };
                 return (
                   <Tool className="w-full" defaultOpen={true} key={toolCallId}>
-                    <ToolHeader
-                      state={state}
-                      type="tool-createCalendarEvent"
-                    />
+                    <ToolHeader state={state} type="tool-createCalendarEvent" />
                     <ToolContent>
                       <ToolOutput
-                        errorText={
-                          "error" in output ? output.error : undefined
-                        }
+                        errorText={"error" in output ? output.error : undefined}
                         output={
                           "error" in output
                             ? undefined

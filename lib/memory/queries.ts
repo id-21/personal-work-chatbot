@@ -6,13 +6,13 @@ import postgres from "postgres";
 import {
   type MemoryChunk,
   type MemoryIngestionLog,
+  memoryChunk,
+  memoryIngestionLog,
   type Narrative,
+  narrative,
   type ProposedFact,
   type ProposedPursuit,
   type Reflection,
-  memoryChunk,
-  memoryIngestionLog,
-  narrative,
   reflection,
   reflectionFeedback,
 } from "@/lib/db/schema";
@@ -208,7 +208,9 @@ export async function getPendingReflectionCount({
   const results = await db
     .select({ id: reflection.id })
     .from(reflection)
-    .where(and(eq(reflection.userId, userId), eq(reflection.status, "pending")));
+    .where(
+      and(eq(reflection.userId, userId), eq(reflection.status, "pending"))
+    );
   return results.length;
 }
 
@@ -219,10 +221,7 @@ export async function updateReflectionStatus({
   id: string;
   status: "pending" | "confirmed" | "dismissed";
 }): Promise<void> {
-  await db
-    .update(reflection)
-    .set({ status })
-    .where(eq(reflection.id, id));
+  await db.update(reflection).set({ status }).where(eq(reflection.id, id));
 }
 
 export async function saveReflectionFeedback({
@@ -275,7 +274,10 @@ export async function getIngestionLog({
   agentType: "reflection" | "knowledge";
 }): Promise<Pick<MemoryIngestionLog, "id" | "ingestedAt"> | undefined> {
   const [result] = await db
-    .select({ id: memoryIngestionLog.id, ingestedAt: memoryIngestionLog.ingestedAt })
+    .select({
+      id: memoryIngestionLog.id,
+      ingestedAt: memoryIngestionLog.ingestedAt,
+    })
     .from(memoryIngestionLog)
     .where(
       and(

@@ -1,17 +1,25 @@
-import { LlmAgent, FunctionTool, InMemoryRunner, getFunctionCalls, getFunctionResponses } from "@google/adk";
+import {
+  FunctionTool,
+  getFunctionCalls,
+  getFunctionResponses,
+  InMemoryRunner,
+  LlmAgent,
+} from "@google/adk";
 import { createUserContent, Type } from "@google/genai";
 import type { UIMessage } from "ai";
 import { after } from "next/server";
+import type { AgentLog } from "@/lib/db/schema";
 import {
-  createAdkMemory,
   countUnconsolidatedAdkMemories,
+  createAdkMemory,
   createAgentRun,
   updateAgentRun,
 } from "./queries";
-import type { AgentLog } from "@/lib/db/schema";
 
 export function buildExchangeText(messages: UIMessage[]): string {
-  const lastUserIdx = [...messages].reverse().findIndex((m) => m.role === "user");
+  const lastUserIdx = [...messages]
+    .reverse()
+    .findIndex((m) => m.role === "user");
   if (lastUserIdx === -1) return "";
 
   const fromIdx = messages.length - 1 - lastUserIdx;
@@ -102,7 +110,11 @@ lasting value. If there is nothing worth storing, do not call store_memory.`,
 
   const runner = new InMemoryRunner({ agent, appName: "memory_ingest" });
 
-  const { id: runId } = await createAgentRun({ userId, chatId, agentName: "ingest_agent" });
+  const { id: runId } = await createAgentRun({
+    userId,
+    chatId,
+    agentName: "ingest_agent",
+  });
   console.log("[adk:ingest] start", { userId, chatId, runId });
 
   const logs: AgentLog[] = [];
@@ -111,7 +123,7 @@ lasting value. If there is nothing worth storing, do not call store_memory.`,
     for await (const event of runner.runEphemeral({
       userId,
       newMessage: createUserContent(
-        `Process and store a memory from this conversation exchange:\n\n${exchangeText}`,
+        `Process and store a memory from this conversation exchange:\n\n${exchangeText}`
       ),
     })) {
       eventCount++;
@@ -123,11 +135,21 @@ lasting value. If there is nothing worth storing, do not call store_memory.`,
       });
       for (const call of getFunctionCalls(event)) {
         console.log("[adk:ingest] tool_call", call.name, call.args);
-        logs.push({ type: "tool_call", name: call.name, data: call.args, timestamp: Date.now() });
+        logs.push({
+          type: "tool_call",
+          name: call.name,
+          data: call.args,
+          timestamp: Date.now(),
+        });
       }
       for (const resp of getFunctionResponses(event)) {
         console.log("[adk:ingest] tool_result", resp.name, resp.response);
-        logs.push({ type: "tool_result", name: resp.name, data: resp.response, timestamp: Date.now() });
+        logs.push({
+          type: "tool_result",
+          name: resp.name,
+          data: resp.response,
+          timestamp: Date.now(),
+        });
       }
       if (event.author !== "user" && event.content?.parts) {
         for (const part of event.content.parts) {
@@ -139,14 +161,27 @@ lasting value. If there is nothing worth storing, do not call store_memory.`,
         }
       }
     }
-    console.log("[adk:ingest] loop_done", { eventCount, logCount: logs.length });
-    await updateAgentRun({ id: runId, status: "done", logs, finishedAt: new Date() });
+    console.log("[adk:ingest] loop_done", {
+      eventCount,
+      logCount: logs.length,
+    });
+    await updateAgentRun({
+      id: runId,
+      status: "done",
+      logs,
+      finishedAt: new Date(),
+    });
     console.log("[adk:ingest] done", { runId });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.log("[adk:ingest] error", { runId, message });
     logs.push({ type: "error", data: message, timestamp: Date.now() });
-    await updateAgentRun({ id: runId, status: "error", logs, finishedAt: new Date() });
+    await updateAgentRun({
+      id: runId,
+      status: "error",
+      logs,
+      finishedAt: new Date(),
+    });
   }
 
   const unconsolidatedCount = await countUnconsolidatedAdkMemories({ userId });

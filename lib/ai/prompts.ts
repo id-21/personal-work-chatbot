@@ -135,6 +135,58 @@ export const updateDocumentPrompt = (
 ${currentContent}`;
 };
 
+export const buildParentChatContext = (
+  parentTitle: string,
+  recentMessages: Array<{ role: string; parts: unknown }>
+): string => {
+  const messageLines = recentMessages
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => {
+      const textParts = (m.parts as Array<{ type: string; text?: string }>)
+        .filter((p) => p.type === "text")
+        .map((p) => p.text ?? "")
+        .join(" ")
+        .trim();
+      return `${m.role === "user" ? "User" : "Assistant"}: ${textParts}`;
+    })
+    .filter((line) => line.length > 10);
+
+  return [
+    "## Parent Chat Context",
+    `This conversation is a sub-chat of "${parentTitle}".`,
+    "Here is the recent conversation history from the parent chat for context:",
+    "",
+    ...messageLines,
+  ].join("\n");
+};
+
+export const buildSubChatSummaries = (
+  subChats: Array<{ title: string; firstMessage: { parts: unknown } | null }>
+): string => {
+  if (subChats.length === 0) {
+    return "";
+  }
+
+  const lines = subChats.map((sub) => {
+    const firstText = sub.firstMessage
+      ? (sub.firstMessage.parts as Array<{ type: string; text?: string }>)
+          .filter((p) => p.type === "text")
+          .map((p) => p.text ?? "")
+          .join(" ")
+          .trim()
+          .slice(0, 150)
+      : "(no messages yet)";
+    return `- **${sub.title}**: ${firstText}`;
+  });
+
+  return [
+    "## Sub-chat Summaries",
+    "This chat has the following sub-chats. You can refer to these when the user asks about related topics:",
+    "",
+    ...lines,
+  ].join("\n");
+};
+
 export const titlePrompt = `Generate a short chat title (2-5 words) summarizing the user's message.
 
 Output ONLY the title text. No prefixes, no formatting.

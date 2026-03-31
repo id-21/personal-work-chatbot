@@ -50,31 +50,16 @@ async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
   const cookieStore = await cookies();
   const chatModelFromCookie = cookieStore.get("chat-model");
 
-  if (!chatModelFromCookie) {
-    return (
-      <>
-        <Chat
-          autoResume={true}
-          id={chat.id}
-          initialChatModel={DEFAULT_CHAT_MODEL}
-          initialMessages={uiMessages}
-          initialVisibilityType={chat.visibility}
-          isReadonly={session?.user?.id !== chat.userId}
-        />
-        <DataStreamHandler />
-      </>
-    );
-  }
-
   return (
     <>
       <Chat
         autoResume={true}
         id={chat.id}
-        initialChatModel={chatModelFromCookie.value}
+        initialChatModel={chatModelFromCookie?.value ?? DEFAULT_CHAT_MODEL}
         initialMessages={uiMessages}
         initialVisibilityType={chat.visibility}
         isReadonly={session?.user?.id !== chat.userId}
+        parentChatId={chat.parentChatId ?? null}
       />
       <DataStreamHandler />
     </>

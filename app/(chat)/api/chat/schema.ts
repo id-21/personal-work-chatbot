@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const textPartSchema = z.object({
   type: z.enum(["text"]),
-  text: z.string().min(1).max(20000),
+  text: z.string().min(1).max(20_000),
 });
 
 const filePartSchema = z.object({
@@ -34,6 +34,7 @@ export const postRequestBodySchema = z.object({
   messages: z.array(messageSchema).optional(),
   selectedChatModel: z.string(),
   selectedVisibilityType: z.enum(["public", "private"]),
+  parentChatId: z.string().uuid().optional(),
 });
 
 export type PostRequestBody = z.infer<typeof postRequestBodySchema>;

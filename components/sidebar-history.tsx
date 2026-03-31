@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { useState } from "react";
 import { toast } from "sonner";
+import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
 import {
   AlertDialog,
@@ -25,7 +26,7 @@ import {
 } from "@/components/ui/sidebar";
 import type { Chat } from "@/lib/db/schema";
 import { fetcher } from "@/lib/utils";
-import { LoaderIcon } from "./icons";
+import { ChevronDownIcon, LoaderIcon } from "./icons";
 import { ChatItem } from "./sidebar-history-item";
 
 type GroupedChats = {
@@ -97,6 +98,84 @@ export function getChatHistoryPaginationKey(
   return `/api/history?ending_before=${firstChatFromPage.id}&limit=${PAGE_SIZE}`;
 }
 
+function ChatItemWithSubChats({
+  chat,
+  isActive,
+  activeChatId,
+  onDelete,
+  onRename,
+  setOpenMobile,
+}: {
+  chat: Chat;
+  isActive: boolean;
+  activeChatId: string | null;
+  onDelete: (chatId: string) => void;
+  onRename: (chatId: string, newTitle: string) => void;
+  setOpenMobile: (open: boolean) => void;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
+
+  const { data: subChats, isLoading: isLoadingSubChats } = useSWR<Chat[]>(
+    isExpanded ? `/api/chat/${chat.id}/subchats` : null,
+    fetcher,
+    { onSuccess: () => setHasFetched(true) }
+  );
+
+  return (
+    <div>
+      <div className="flex items-center">
+        <button
+          aria-label={isExpanded ? "Collapse sub-chats" : "Expand sub-chats"}
+          className="shrink-0 flex h-8 w-5 items-center justify-center text-sidebar-foreground/50 hover:text-sidebar-foreground"
+          onClick={() => setIsExpanded((v) => !v)}
+          type="button"
+        >
+          <ChevronDownIcon
+            className={`transition-transform duration-150 ${isExpanded ? "" : "-rotate-90"}`}
+            size={12}
+          />
+        </button>
+        <div className="flex-1 min-w-0">
+          <ChatItem
+            chat={chat}
+            isActive={isActive}
+            onDelete={onDelete}
+            onRename={onRename}
+            setOpenMobile={setOpenMobile}
+          />
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="ml-5 border-l border-sidebar-border pl-2">
+          {isLoadingSubChats && (
+            <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
+              <LoaderIcon className="animate-spin" size={10} />
+              <span>Loading...</span>
+            </div>
+          )}
+          {subChats?.map((sub) => (
+            <ChatItem
+              chat={sub}
+              isActive={sub.id === activeChatId}
+              key={sub.id}
+              onDelete={onDelete}
+              onRename={onRename}
+              setOpenMobile={setOpenMobile}
+            />
+          ))}
+          {hasFetched && subChats?.length === 0 && (
+            <div className="px-2 py-1 text-xs text-muted-foreground">
+              No sub-chats yet
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SidebarHistory({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
   const pathname = usePathname();
@@ -117,16 +196,19 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleRename = (chatId: string, newTitle: string) => {
-    mutate((chatHistories) => {
-      if (chatHistories) {
-        return chatHistories.map((chatHistory) => ({
-          ...chatHistory,
-          chats: chatHistory.chats.map((chat) =>
-            chat.id === chatId ? { ...chat, title: newTitle } : chat
-          ),
-        }));
-      }
-    }, { revalidate: false });
+    mutate(
+      (chatHistories) => {
+        if (chatHistories) {
+          return chatHistories.map((chatHistory) => ({
+            ...chatHistory,
+            chats: chatHistory.chats.map((chat) =>
+              chat.id === chatId ? { ...chat, title: newTitle } : chat
+            ),
+          }));
+        }
+      },
+      { revalidate: false }
+    );
   };
 
   const hasReachedEnd = paginatedChatHistories
@@ -246,7 +328,8 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                           Today
                         </div>
                         {groupedChats.today.map((chat) => (
-                          <ChatItem
+                          <ChatItemWithSubChats
+                            activeChatId={id}
                             chat={chat}
                             isActive={chat.id === id}
                             key={chat.id}
@@ -267,7 +350,8 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                           Yesterday
                         </div>
                         {groupedChats.yesterday.map((chat) => (
-                          <ChatItem
+                          <ChatItemWithSubChats
+                            activeChatId={id}
                             chat={chat}
                             isActive={chat.id === id}
                             key={chat.id}
@@ -288,7 +372,8 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                           Last 7 days
                         </div>
                         {groupedChats.lastWeek.map((chat) => (
-                          <ChatItem
+                          <ChatItemWithSubChats
+                            activeChatId={id}
                             chat={chat}
                             isActive={chat.id === id}
                             key={chat.id}
@@ -309,7 +394,8 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                           Last 30 days
                         </div>
                         {groupedChats.lastMonth.map((chat) => (
-                          <ChatItem
+                          <ChatItemWithSubChats
+                            activeChatId={id}
                             chat={chat}
                             isActive={chat.id === id}
                             key={chat.id}
@@ -330,7 +416,8 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                           Older than last month
                         </div>
                         {groupedChats.older.map((chat) => (
-                          <ChatItem
+                          <ChatItemWithSubChats
+                            activeChatId={id}
                             chat={chat}
                             isActive={chat.id === id}
                             key={chat.id}

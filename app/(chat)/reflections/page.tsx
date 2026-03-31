@@ -1,13 +1,15 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/app/(auth)/auth";
-import { getPendingReflectionsByUser } from "@/lib/memory/queries";
 import { ReflectionList } from "@/components/reflection-list";
+import { getPendingReflectionsByUser } from "@/lib/memory/queries";
 
 export default async function ReflectionsPage() {
   const session = await auth();
   if (!session?.user) redirect("/api/auth/guest");
 
-  const reflections = await getPendingReflectionsByUser({ userId: session.user.id });
+  const reflections = await getPendingReflectionsByUser({
+    userId: session.user.id,
+  });
 
   return (
     <div className="flex flex-col items-center w-full min-h-dvh bg-background px-4 py-12">

@@ -3,10 +3,9 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import useSWR from "swr";
-import type { Document } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
+import type { Document } from "@/lib/db/schema";
 
 function fetcher(url: string) {
   return fetch(url).then((r) => r.json());
@@ -53,12 +52,12 @@ export function KbViewer({ docId }: { docId: string }) {
       {/* Version navigator */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground select-none">
         <Button
-          variant="ghost"
-          size="icon"
+          aria-label="Older version"
           className="h-7 w-7"
           disabled={idx === 0}
           onClick={() => setCurrentIndex(idx - 1)}
-          aria-label="Older version"
+          size="icon"
+          variant="ghost"
         >
           <ChevronLeftIcon size={16} />
         </Button>
@@ -70,12 +69,12 @@ export function KbViewer({ docId }: { docId: string }) {
         </span>
 
         <Button
-          variant="ghost"
-          size="icon"
+          aria-label="Newer version"
           className="h-7 w-7"
           disabled={idx === total - 1}
           onClick={() => setCurrentIndex(idx + 1)}
-          aria-label="Newer version"
+          size="icon"
+          variant="ghost"
         >
           <ChevronRightIcon size={16} />
         </Button>
@@ -86,12 +85,21 @@ export function KbViewer({ docId }: { docId: string }) {
       {/* Content */}
       <article className="prose prose-sm dark:prose-invert max-w-none text-foreground">
         <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
           components={{
             a: ({ href, children }) => (
               <a
-                href={href}
                 className="text-primary underline underline-offset-2 hover:opacity-80"
+                href={href}
+              >
+                {children}
+              </a>
+            ),
+          }}
+          components={{
+            a: ({ href, children }) => (
+              <a
+                className="text-primary underline underline-offset-2 hover:opacity-80"
+                href={href}
               >
                 {children}
               </a>

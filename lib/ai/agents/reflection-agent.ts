@@ -106,11 +106,21 @@ export async function runReflectionAgent({
 
     // Skip trivially short chats
     if (!transcript || transcript.length < 150) {
-      console.log("[reflection-agent] transcript too short — skipping (length:", transcript.length, ")");
+      console.log(
+        "[reflection-agent] transcript too short — skipping (length:",
+        transcript.length,
+        ")"
+      );
       return;
     }
 
-    console.log("[reflection-agent] transcript length:", transcript.length, "chars,", messages.length, "messages");
+    console.log(
+      "[reflection-agent] transcript length:",
+      transcript.length,
+      "chars,",
+      messages.length,
+      "messages"
+    );
 
     const { text } = await generateText({
       model: getOSModel(),
@@ -118,13 +128,21 @@ export async function runReflectionAgent({
     });
 
     // Strip markdown code fences if present
-    const cleaned = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+    const cleaned = text
+      .replace(/^```(?:json)?\n?/, "")
+      .replace(/\n?```$/, "")
+      .trim();
 
     let parsed: z.infer<typeof ReflectionOutputSchema>;
     try {
       parsed = ReflectionOutputSchema.parse(JSON.parse(cleaned));
     } catch (err) {
-      console.error("[reflection-agent] Failed to parse output:", err, "\nRaw:", text);
+      console.error(
+        "[reflection-agent] Failed to parse output:",
+        err,
+        "\nRaw:",
+        text
+      );
       return;
     }
 

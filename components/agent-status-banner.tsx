@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { AgentRun, AgentLog } from "@/lib/db/schema";
+import type { AgentLog, AgentRun } from "@/lib/db/schema";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -35,7 +35,9 @@ function AgentStatusBannerInner() {
 
   const [banners, setBanners] = useState<Record<string, BannerEntry>>({});
   const [logsRun, setLogsRun] = useState<AgentRun | null>(null);
-  const dismissTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const dismissTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>(
+    {}
+  );
 
   useEffect(() => {
     if (!runs) return;
@@ -81,7 +83,6 @@ function AgentStatusBannerInner() {
         {visible.map(({ run }) => (
           <Banner
             key={run.id}
-            run={run}
             onDismiss={() =>
               setBanners((b) => ({
                 ...b,
@@ -89,14 +90,12 @@ function AgentStatusBannerInner() {
               }))
             }
             onViewLogs={() => setLogsRun(run)}
+            run={run}
           />
         ))}
       </div>
 
-      <LogsDialog
-        run={logsRun}
-        onClose={() => setLogsRun(null)}
-      />
+      <LogsDialog onClose={() => setLogsRun(null)} run={logsRun} />
     </>
   );
 }
@@ -120,24 +119,26 @@ function Banner({
         : "bg-red-50 border-red-200 text-red-900";
 
   return (
-    <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm ${bg}`}>
+    <div
+      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm ${bg}`}
+    >
       <StatusIcon status={run.status} />
       <span className="flex-1 font-medium truncate">{label}</span>
       {run.status !== "running" && (
         <button
-          type="button"
-          onClick={onViewLogs}
           className="underline underline-offset-2 shrink-0 opacity-70 hover:opacity-100"
+          onClick={onViewLogs}
+          type="button"
         >
           Logs
         </button>
       )}
       {run.status !== "running" && (
         <button
-          type="button"
-          onClick={onDismiss}
-          className="shrink-0 opacity-50 hover:opacity-100"
           aria-label="Dismiss"
+          className="shrink-0 opacity-50 hover:opacity-100"
+          onClick={onDismiss}
+          type="button"
         >
           ×
         </button>
@@ -150,16 +151,23 @@ function StatusIcon({ status }: { status: string }) {
   if (status === "running") {
     return (
       <svg
+        aria-hidden="true"
         className="size-3 animate-spin shrink-0"
         fill="none"
         viewBox="0 0 24 24"
-        aria-hidden="true"
       >
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
         <path
           className="opacity-75"
-          fill="currentColor"
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          fill="currentColor"
         />
       </svg>
     );
@@ -168,17 +176,27 @@ function StatusIcon({ status }: { status: string }) {
   return <span className="shrink-0">✗</span>;
 }
 
-function LogsDialog({ run, onClose }: { run: AgentRun | null; onClose: () => void }) {
+function LogsDialog({
+  run,
+  onClose,
+}: {
+  run: AgentRun | null;
+  onClose: () => void;
+}) {
   if (!run) return null;
 
   const label = AGENT_LABELS[run.agentName] ?? run.agentName;
-  const duration =
-    run.finishedAt
-      ? `${((new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000).toFixed(1)}s`
-      : "—";
+  const duration = run.finishedAt
+    ? `${((new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000).toFixed(1)}s`
+    : "—";
 
   return (
-    <Dialog open={!!run} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      open={!!run}
+    >
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>

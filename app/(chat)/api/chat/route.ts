@@ -10,21 +10,30 @@ import {
 import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { auth, type UserType } from "@/app/(auth)/auth";
+import { updateKnowledgeBase } from "@/lib/ai/agents/knowledge-agent";
+import { runReflectionAgent } from "@/lib/ai/agents/reflection-agent";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
-import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
+import {
+  buildParentChatContext,
+  buildSubChatSummaries,
+  type RequestHints,
+  systemPrompt,
+} from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
+import { createCalendarEvent } from "@/lib/ai/tools/create-calendar-event";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
-import { createCalendarEvent } from "@/lib/ai/tools/create-calendar-event";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
   deleteChatById,
   getChatById,
+  getFirstMessageByChatId,
   getMessageCountByUserId,
   getMessagesByChatId,
+  getSubChatsByParentId,
   saveChat,
   saveMessages,
   updateChatTitleById,
@@ -32,12 +41,10 @@ import {
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
+import { queryAdkMemory } from "@/lib/memory/adk/query-agent";
+import { assembleContext } from "@/lib/memory/context-assembly";
 import type { ChatMessage } from "@/lib/types";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
-import { updateKnowledgeBase } from "@/lib/ai/agents/knowledge-agent";
-import { runReflectionAgent } from "@/lib/ai/agents/reflection-agent";
-import { assembleContext } from "@/lib/memory/context-assembly";
-import { queryAdkMemory } from "@/lib/memory/adk/query-agent";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
@@ -64,8 +71,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, messages, selectedChatModel, selectedVisibilityType } =
-      requestBody;
+    const {
+      id,
+      message,
+      messages,
+      selectedChatModel,
+      selectedVisibilityType,
+      parentChatId,
+    } = requestBody;
 
     const session = await auth();
 
@@ -103,6 +116,7 @@ export async function POST(request: Request) {
         userId: session.user.id,
         title: "New chat",
         visibility: selectedVisibilityType,
+        parentChatId,
       });
       titlePromise = generateTitleFromUserMessage({ message });
     }
@@ -145,7 +159,9 @@ export async function POST(request: Request) {
     let memoryContext = "";
     let adkContext = "";
     if (process.env.MEMORY_ENABLED && message?.role === "user") {
-      const latestText = (message.parts as Array<{ type: string; text?: string }>)
+      const latestText = (
+        message.parts as Array<{ type: string; text?: string }>
+      )
         .filter((p) => p.type === "text")
         .map((p) => p.text)
         .join(" ")
@@ -153,22 +169,71 @@ export async function POST(request: Request) {
       if (latestText) {
         [memoryContext, adkContext] = await Promise.all([
           process.env.LEGACY_MEMORY_ENABLED
-            ? assembleContext({ userId: session.user.id, userMessage: latestText }).catch(() => "")
+            ? assembleContext({
+                userId: session.user.id,
+                userMessage: latestText,
+              }).catch(() => "")
             : Promise.resolve(""),
-          queryAdkMemory({ userId: session.user.id, userMessage: latestText }).catch(() => ""),
+          queryAdkMemory({
+            userId: session.user.id,
+            userMessage: latestText,
+          }).catch(() => ""),
         ]);
-        if (process.env.LEGACY_MEMORY_ENABLED) console.log("[memory:vector]", memoryContext || "(none)");
+        if (process.env.LEGACY_MEMORY_ENABLED)
+          console.log("[memory:vector]", memoryContext || "(none)");
         console.log("[memory:adk]", adkContext || "(none)");
       }
     }
-    const contextBlock = [memoryContext, adkContext].filter(Boolean).join("\n\n---\n\n");
+    const contextBlock = [memoryContext, adkContext]
+      .filter(Boolean)
+      .join("\n\n---\n\n");
+
+    // Assemble hierarchical context for parent/sub-chat awareness
+    let hierarchicalContext = "";
+    const currentChat = chat ?? (await getChatById({ id }));
+    if (currentChat) {
+      if (currentChat.parentChatId) {
+        const parentChat = await getChatById({ id: currentChat.parentChatId });
+        if (parentChat) {
+          const parentMessages = await getMessagesByChatId({
+            id: parentChat.id,
+          });
+          hierarchicalContext = buildParentChatContext(
+            parentChat.title,
+            parentMessages.slice(-20)
+          );
+        }
+      } else {
+        const subChats = await getSubChatsByParentId({
+          parentId: id,
+          userId: session.user.id,
+        });
+        if (subChats.length > 0) {
+          const subChatSummaries = await Promise.all(
+            subChats.map(async (sub) => {
+              const firstMessage = await getFirstMessageByChatId({
+                id: sub.id,
+              });
+              return { title: sub.title, firstMessage };
+            })
+          );
+          hierarchicalContext = buildSubChatSummaries(subChatSummaries);
+        }
+      }
+    }
 
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
-        const baseSystemPrompt = systemPrompt({ selectedChatModel, requestHints });
-        const fullSystemPrompt = contextBlock
-          ? `${baseSystemPrompt}\n\n---\n\n${contextBlock}`
+        const baseSystemPrompt = systemPrompt({
+          selectedChatModel,
+          requestHints,
+        });
+        const allContext = [contextBlock, hierarchicalContext]
+          .filter(Boolean)
+          .join("\n\n---\n\n");
+        const fullSystemPrompt = allContext
+          ? `${baseSystemPrompt}\n\n---\n\n${allContext}`
           : baseSystemPrompt;
         const result = streamText({
           model: getLanguageModel(selectedChatModel),
@@ -269,7 +334,10 @@ export async function POST(request: Request) {
                 "@/lib/memory/adk/ingest-agent"
               );
               // uiMessages has the user message; finishedMessages has the assistant response
-              const exchangeText = buildExchangeText([...uiMessages, ...finishedMessages]);
+              const exchangeText = buildExchangeText([
+                ...uiMessages,
+                ...finishedMessages,
+              ]);
               if (exchangeText) {
                 await ingestExchange({
                   userId: session.user.id,

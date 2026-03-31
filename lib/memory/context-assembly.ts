@@ -20,19 +20,16 @@ export async function assembleContext({
     if (topic) acc[topic] = (acc[topic] ?? 0) + 1;
     return acc;
   }, {});
-  const topTopic = Object.entries(topicCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const topTopic = Object.entries(topicCounts).sort(
+    (a, b) => b[1] - a[1]
+  )[0]?.[0];
   const narrativeDoc = topTopic
     ? await getNarrativeByTopic({ userId, topic: topTopic })
     : null;
 
-  const chunkBlock = chunks
-    .map((c, i) => `${i + 1}. ${c.text}`)
-    .join("\n");
+  const chunkBlock = chunks.map((c, i) => `${i + 1}. ${c.text}`).join("\n");
 
-  const parts = [
-    "## Relevant Memory\n",
-    chunkBlock,
-  ];
+  const parts = ["## Relevant Memory\n", chunkBlock];
 
   if (narrativeDoc?.content) {
     parts.push(`\n## ${topTopic} — Context\n${narrativeDoc.content}`);

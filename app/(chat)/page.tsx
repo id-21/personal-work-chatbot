@@ -5,46 +5,39 @@ import { DataStreamHandler } from "@/components/data-stream-handler";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { generateUUID } from "@/lib/utils";
 
-export default function Page() {
+export default function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ parentId?: string }>;
+}) {
   return (
     <Suspense fallback={<div className="flex h-dvh" />}>
-      <NewChatPage />
+      <NewChatPage searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function NewChatPage() {
+async function NewChatPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ parentId?: string }>;
+}) {
   const cookieStore = await cookies();
   const modelIdFromCookie = cookieStore.get("chat-model");
   const id = generateUUID();
-
-  if (!modelIdFromCookie) {
-    return (
-      <>
-        <Chat
-          autoResume={false}
-          id={id}
-          initialChatModel={DEFAULT_CHAT_MODEL}
-          initialMessages={[]}
-          initialVisibilityType="private"
-          isReadonly={false}
-          key={id}
-        />
-        <DataStreamHandler />
-      </>
-    );
-  }
+  const { parentId } = await searchParams;
 
   return (
     <>
       <Chat
         autoResume={false}
         id={id}
-        initialChatModel={modelIdFromCookie.value}
+        initialChatModel={modelIdFromCookie?.value ?? DEFAULT_CHAT_MODEL}
         initialMessages={[]}
         initialVisibilityType="private"
         isReadonly={false}
         key={id}
+        parentChatId={parentId ?? null}
       />
       <DataStreamHandler />
     </>

@@ -40,6 +40,7 @@ export function Chat({
   initialVisibilityType,
   isReadonly,
   autoResume,
+  parentChatId,
 }: {
   id: string;
   initialMessages: ChatMessage[];
@@ -47,6 +48,7 @@ export function Chat({
   initialVisibilityType: VisibilityType;
   isReadonly: boolean;
   autoResume: boolean;
+  parentChatId?: string | null;
 }) {
   const router = useRouter();
 
@@ -127,6 +129,7 @@ export function Chat({
               : { message: lastMessage }),
             selectedChatModel: currentModelIdRef.current,
             selectedVisibilityType: visibilityType,
+            ...(parentChatId ? { parentChatId } : {}),
             ...request.body,
           },
         };
@@ -137,6 +140,9 @@ export function Chat({
     },
     onFinish: () => {
       mutate(unstable_serialize(getChatHistoryPaginationKey));
+      if (parentChatId) {
+        mutate(`/api/chat/${parentChatId}/subchats`);
+      }
     },
     onError: (error) => {
       if (error instanceof ChatSDKError) {

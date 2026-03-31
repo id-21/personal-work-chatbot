@@ -22,17 +22,27 @@ export const user = pgTable("User", {
 
 export type User = InferSelectModel<typeof user>;
 
-export const chat = pgTable("Chat", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  createdAt: timestamp("createdAt").notNull(),
-  title: text("title").notNull(),
-  userId: uuid("userId")
-    .notNull()
-    .references(() => user.id),
-  visibility: varchar("visibility", { enum: ["public", "private"] })
-    .notNull()
-    .default("private"),
-});
+export const chat = pgTable(
+  "Chat",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    createdAt: timestamp("createdAt").notNull(),
+    title: text("title").notNull(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id),
+    visibility: varchar("visibility", { enum: ["public", "private"] })
+      .notNull()
+      .default("private"),
+    parentChatId: uuid("parentChatId"),
+  },
+  (table) => ({
+    parentChatRef: foreignKey({
+      columns: [table.parentChatId],
+      foreignColumns: [table.id],
+    }).onDelete("set null"),
+  })
+);
 
 export type Chat = InferSelectModel<typeof chat>;
 
@@ -214,7 +224,10 @@ export const memoryChunk = pgTable("MemoryChunk", {
     .notNull()
     .references(() => user.id),
   chatId: uuid("chatId").references(() => chat.id),
-  sourceMessageIds: json("sourceMessageIds").$type<string[]>().notNull().default([]),
+  sourceMessageIds: json("sourceMessageIds")
+    .$type<string[]>()
+    .notNull()
+    .default([]),
   text: text("text").notNull(),
   embedding: vectorColumn("embedding", { dimensions: 768 }).notNull(),
   tags: json("tags").$type<string[]>().notNull().default([]),
@@ -250,8 +263,14 @@ export const reflection = pgTable("Reflection", {
   status: varchar("status", { enum: ["pending", "confirmed", "dismissed"] })
     .notNull()
     .default("pending"),
-  proposedFacts: json("proposedFacts").$type<ProposedFact[]>().notNull().default([]),
-  proposedPursuits: json("proposedPursuits").$type<ProposedPursuit[]>().notNull().default([]),
+  proposedFacts: json("proposedFacts")
+    .$type<ProposedFact[]>()
+    .notNull()
+    .default([]),
+  proposedPursuits: json("proposedPursuits")
+    .$type<ProposedPursuit[]>()
+    .notNull()
+    .default([]),
   casualTopics: json("casualTopics").$type<string[]>().notNull().default([]),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
@@ -280,8 +299,13 @@ export const memoryIngestionLog = pgTable("MemoryIngestionLog", {
   userId: uuid("userId")
     .notNull()
     .references(() => user.id),
-  agentType: varchar("agentType", { enum: ["reflection", "knowledge"] }).notNull(),
-  processedMessageIds: json("processedMessageIds").$type<string[]>().notNull().default([]),
+  agentType: varchar("agentType", {
+    enum: ["reflection", "knowledge"],
+  }).notNull(),
+  processedMessageIds: json("processedMessageIds")
+    .$type<string[]>()
+    .notNull()
+    .default([]),
   ingestedAt: timestamp("ingestedAt").notNull().defaultNow(),
 });
 
@@ -301,7 +325,10 @@ export const adkMemory = pgTable("AdkMemory", {
   entities: json("entities").$type<string[]>().notNull().default([]),
   topics: json("topics").$type<string[]>().notNull().default([]),
   importance: real("importance").notNull().default(0.5),
-  connections: json("connections").$type<AdkConnection[]>().notNull().default([]),
+  connections: json("connections")
+    .$type<AdkConnection[]>()
+    .notNull()
+    .default([]),
   consolidated: boolean("consolidated").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
@@ -337,7 +364,7 @@ export const agentRun = pgTable("AgentRun", {
   chatId: uuid("chatId").references(() => chat.id),
   agentName: text("agentName").notNull(), // e.g. "ingest_agent", "consolidate_agent"
   status: varchar("status", { length: 16 }).notNull().default("running"),
-    // 'running' | 'done' | 'error'
+  // 'running' | 'done' | 'error'
   logs: json("logs").$type<AgentLog[]>().notNull().default([]),
   startedAt: timestamp("startedAt").notNull().defaultNow(),
   finishedAt: timestamp("finishedAt"),

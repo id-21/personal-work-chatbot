@@ -1,7 +1,11 @@
 import "server-only";
 
 import { generateText } from "ai";
-import { getKnowledgeBaseDocument, getMessagesByChatId, saveDocument } from "@/lib/db/queries";
+import {
+  getKnowledgeBaseDocument,
+  getMessagesByChatId,
+  saveDocument,
+} from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
 import { generateUUID } from "@/lib/utils";
 import { getOSModel } from "../providers";

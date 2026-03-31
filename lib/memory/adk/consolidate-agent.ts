@@ -1,14 +1,20 @@
-import { LlmAgent, FunctionTool, InMemoryRunner, getFunctionCalls, getFunctionResponses } from "@google/adk";
-import { createUserContent, Type } from "@google/genai";
 import {
+  FunctionTool,
+  getFunctionCalls,
+  getFunctionResponses,
+  InMemoryRunner,
+  LlmAgent,
+} from "@google/adk";
+import { createUserContent, Type } from "@google/genai";
+import type { AgentLog } from "@/lib/db/schema";
+import {
+  createAdkInsight,
+  createAgentRun,
   getUnconsolidatedAdkMemories,
   markMemoriesConsolidated,
   updateAdkMemoryConnections,
-  createAdkInsight,
-  createAgentRun,
   updateAgentRun,
 } from "./queries";
-import type { AgentLog } from "@/lib/db/schema";
 
 export async function runConsolidation({ userId }: { userId: string }) {
   const readTool = new FunctionTool({
@@ -19,7 +25,10 @@ export async function runConsolidation({ userId }: { userId: string }) {
       properties: {},
     },
     execute: async () => {
-      const memories = await getUnconsolidatedAdkMemories({ userId, limit: 30 });
+      const memories = await getUnconsolidatedAdkMemories({
+        userId,
+        limit: 30,
+      });
       return {
         memories: memories.map((m) => ({
           id: m.id,
@@ -70,7 +79,12 @@ export async function runConsolidation({ userId }: { userId: string }) {
         };
       }
 
-      await createAdkInsight({ userId, summary, insight, memoryIds: sourceIds });
+      await createAdkInsight({
+        userId,
+        summary,
+        insight,
+        memoryIds: sourceIds,
+      });
 
       for (const id of sourceIds) {
         const linkedTo = sourceIds.filter((x) => x !== id);
@@ -107,7 +121,11 @@ Steps:
 
   const runner = new InMemoryRunner({ agent, appName: "memory_consolidate" });
 
-  const { id: runId } = await createAgentRun({ userId, chatId: null, agentName: "consolidate_agent" });
+  const { id: runId } = await createAgentRun({
+    userId,
+    chatId: null,
+    agentName: "consolidate_agent",
+  });
   console.log("[adk:consolidate] start", { userId, runId });
 
   const logs: AgentLog[] = [];
@@ -120,11 +138,21 @@ Steps:
       eventCount++;
       for (const call of getFunctionCalls(event)) {
         console.log("[adk:consolidate] tool_call", call.name, call.args);
-        logs.push({ type: "tool_call", name: call.name, data: call.args, timestamp: Date.now() });
+        logs.push({
+          type: "tool_call",
+          name: call.name,
+          data: call.args,
+          timestamp: Date.now(),
+        });
       }
       for (const resp of getFunctionResponses(event)) {
         console.log("[adk:consolidate] tool_result", resp.name, resp.response);
-        logs.push({ type: "tool_result", name: resp.name, data: resp.response, timestamp: Date.now() });
+        logs.push({
+          type: "tool_result",
+          name: resp.name,
+          data: resp.response,
+          timestamp: Date.now(),
+        });
       }
       if (event.author !== "user" && event.content?.parts) {
         for (const part of event.content.parts) {
@@ -136,13 +164,26 @@ Steps:
         }
       }
     }
-    console.log("[adk:consolidate] loop_done", { eventCount, logCount: logs.length });
-    await updateAgentRun({ id: runId, status: "done", logs, finishedAt: new Date() });
+    console.log("[adk:consolidate] loop_done", {
+      eventCount,
+      logCount: logs.length,
+    });
+    await updateAgentRun({
+      id: runId,
+      status: "done",
+      logs,
+      finishedAt: new Date(),
+    });
     console.log("[adk:consolidate] done", { runId });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.log("[adk:consolidate] error", { runId, message });
     logs.push({ type: "error", data: message, timestamp: Date.now() });
-    await updateAgentRun({ id: runId, status: "error", logs, finishedAt: new Date() });
+    await updateAgentRun({
+      id: runId,
+      status: "error",
+      logs,
+      finishedAt: new Date(),
+    });
   }
 }

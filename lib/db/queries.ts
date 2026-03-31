@@ -9,6 +9,7 @@ import {
   gt,
   gte,
   inArray,
+  isNull,
   lt,
   type SQL,
 } from "drizzle-orm";
@@ -84,11 +85,13 @@ export async function saveChat({
   userId,
   title,
   visibility,
+  parentChatId,
 }: {
   id: string;
   userId: string;
   title: string;
   visibility: VisibilityType;
+  parentChatId?: string;
 }) {
   try {
     return await db.insert(chat).values({
@@ -97,6 +100,7 @@ export async function saveChat({
       userId,
       title,
       visibility,
+      parentChatId: parentChatId ?? null,
     });
   } catch (_error) {
     throw new ChatSDKError("bad_request:database", "Failed to save chat");
@@ -167,14 +171,18 @@ export async function getChatsByUserId({
   try {
     const extendedLimit = limit + 1;
 
-    const query = (whereCondition?: SQL<any>) =>
+    const query = (whereCondition?: SQL<unknown>) =>
       db
         .select()
         .from(chat)
         .where(
           whereCondition
-            ? and(whereCondition, eq(chat.userId, id))
-            : eq(chat.userId, id)
+            ? and(
+                whereCondition,
+                eq(chat.userId, id),
+                isNull(chat.parentChatId)
+              )
+            : and(eq(chat.userId, id), isNull(chat.parentChatId))
         )
         .orderBy(desc(chat.createdAt))
         .limit(extendedLimit);
@@ -239,6 +247,48 @@ export async function getChatById({ id }: { id: string }) {
     return selectedChat;
   } catch (_error) {
     throw new ChatSDKError("bad_request:database", "Failed to get chat by id");
+  }
+}
+
+export async function getSubChatsByParentId({
+  parentId,
+  userId,
+}: {
+  parentId: string;
+  userId: string;
+}): Promise<Chat[]> {
+  try {
+    return await db
+      .select()
+      .from(chat)
+      .where(and(eq(chat.parentChatId, parentId), eq(chat.userId, userId)))
+      .orderBy(asc(chat.createdAt));
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get sub-chats by parent id"
+    );
+  }
+}
+
+export async function getFirstMessageByChatId({
+  id,
+}: {
+  id: string;
+}): Promise<DBMessage | null> {
+  try {
+    const [firstMessage] = await db
+      .select()
+      .from(message)
+      .where(eq(message.chatId, id))
+      .orderBy(asc(message.createdAt))
+      .limit(1);
+    return firstMessage ?? null;
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to get first message by chat id"
+    );
   }
 }
 
@@ -625,9 +675,15 @@ export async function getAllChatsByUserId({
 }: {
   userId: string;
 }): Promise<Chat[]> {
-  return db.select().from(chat).where(eq(chat.userId, userId)).orderBy(asc(chat.createdAt));
+  return db
+    .select()
+    .from(chat)
+    .where(eq(chat.userId, userId))
+    .orderBy(asc(chat.createdAt));
 }
 
-export async function getAllUsers(): Promise<Array<{ id: string; email: string }>> {
+export async function getAllUsers(): Promise<
+  Array<{ id: string; email: string }>
+> {
   return db.select({ id: user.id, email: user.email }).from(user);
 }
