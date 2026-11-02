@@ -91,3 +91,13 @@ Uses **Biome** via the `ultracite` wrapper. No ESLint. Key constraints from `.cu
 ### Auth
 
 NextAuth v5 (`next-auth@5.0.0-beta.25`). Config split across `app/(auth)/auth.config.ts` (edge-safe) and `app/(auth)/auth.ts` (full, with DB adapter). Guest auth supported via `/api/auth/guest`.
+
+
+## Setup / rebuild
+`node_modules/` and `.next/` are disposable; `pnpm-lock.yaml` pins everything (pnpm 9.12.3).
+```bash
+pnpm install
+pnpm db:migrate     # apply Drizzle migrations
+pnpm dev            # next dev --turbo
+```
+Keep `.env.local` (copy from `.env.example` if lost; needs the DB URL and auth/AI keys). The `.venv/` holds only dev tooling (pytest, flake8) and is disposable: `python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt`.
